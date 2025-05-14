@@ -1,4 +1,3 @@
-```markdown
 # n8n-nodes-onebot
 
 ![npm](https://img.shields.io/npm/v/n8n-nodes-onebot-api) ![license](https://img.shields.io/npm/l/n8n-nodes-onebot-api)
@@ -107,6 +106,3 @@
 - [go-cqhttp 官方文档](https://docs.go-cqhttp.org)
 
 ---
-
-*Happy automating!* 🚀
-```
