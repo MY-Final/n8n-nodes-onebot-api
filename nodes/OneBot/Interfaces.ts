@@ -10,7 +10,8 @@ export type OneBotMap = {
 	friend: 
 		| 'get_stranger_info'   // 获取陌生人信息
 		| 'get_friend_list'     // 获取好友列表
-		| 'send_like';          // 发送好友赞
+		| 'send_like'           // 发送好友赞
+		| 'friend_poke';        // 私聊戳一戳
 	group: 
 		| 'get_group_info'        // 获取群信息
 		| 'get_group_list'        // 获取群列表
@@ -20,7 +21,9 @@ export type OneBotMap = {
 		| 'set_group_ban'         // 群成员禁言
 		| 'set_group_whole_ban'   // 全员禁言
 		| 'set_group_name'        // 设置群名称
-		| 'set_group_admin';      // 设置群管理员
+		| 'set_group_admin'       // 设置群管理员
+		| 'group_poke'           // 群戳一戳
+		| 'set_group_sign';      // 设置群签到
 	message: 
 		| 'send_group_msg'     // 发送群消息
 		| 'send_private_msg';  // 发送私聊消息

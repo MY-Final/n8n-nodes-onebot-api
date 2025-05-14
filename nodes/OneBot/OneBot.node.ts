@@ -104,6 +104,11 @@ export class OneBot implements INodeType {
 						value: 'send_like',
 						action: 'Send like to a friend',
 					},
+					{
+						name: '私聊戳一戳',
+						value: 'send_friend_poke',
+						action: 'Send friend Poke',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -167,6 +172,19 @@ export class OneBot implements INodeType {
 						value: 'set_group_admin',
 						action: 'Set Group Admin',
 						description: '要求机器人是群主',
+					},
+					{
+						name: '群戳一戳',
+						value: 'group_poke',
+						action: 'Group Poke',
+						description: '群戳一戳，戳了一下你，嘻嘻',
+					
+					},
+					{
+						name: '设置群签到',
+						value: 'set_group_sign',
+						action: 'Set Group Sign',
+						description: '设置群签到',
 					},
 				],
 				displayOptions: {
@@ -236,7 +254,7 @@ export class OneBot implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
-						operation: ['send_private_msg', 'get_stranger_info', 'send_like'],
+						operation: ['send_private_msg', 'get_stranger_info', 'send_like', 'send_friend_poke'],
 					},
 				},
 			},
@@ -259,6 +277,8 @@ export class OneBot implements INodeType {
 							'get_group_list',
 							'get_group_member_list',
 							'send_group_msg',
+							'group_poke',
+							'set_group_sign',
 						],
 					},
 				},
@@ -314,11 +334,11 @@ export class OneBot implements INodeType {
 				},
 				default: '',
 				description:
-					'选择要设置的群成员，可以输入昵称或QQ号进行搜索，也可以直接输入QQ号。只能选择普通成员设置为管理员或取消管理员身份',
+					'选择要戳的群成员，可以输入昵称或QQ号进行搜索，也可以直接输入QQ号',
 				required: true,
 				displayOptions: {
 					show: {
-						operation: ['get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_admin'],
+						operation: ['get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_admin', 'group_poke'],
 					},
 				},
 			},
@@ -660,7 +680,7 @@ export class OneBot implements INodeType {
 
 				// 获取并处理群组ID
 				let groupId: string | number | undefined;
-				if (['send_group_msg', 'get_group_info', 'get_group_member_list', 'get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_whole_ban', 'set_group_name', 'set_group_admin'].includes(action.operation as string)) {
+				if (['send_group_msg', 'get_group_info', 'get_group_member_list', 'get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_whole_ban', 'set_group_name', 'set_group_admin', 'group_poke', 'set_group_sign'].includes(action.operation as string)) {
 					groupId = this.getNodeParameter('group_id', index) as string | number;
 					console.log('获取到group_id:', groupId, '类型:', typeof groupId);
 				}
@@ -691,6 +711,13 @@ export class OneBot implements INodeType {
 						body.times = this.getNodeParameter('times', index) as number;
 						endpoint = 'send_like';
 						console.log('send_like参数:', JSON.stringify(body));
+						break;
+					case 'send_friend_poke':
+						// 私聊戳一戳：设置用户QQ号
+						const friendPokeUserId = this.getNodeParameter('user_id', index);
+						body.user_id = friendPokeUserId;
+						console.log('send_friend_poke参数:', JSON.stringify(body));
+						endpoint = 'send_poke';
 						break;
 					case 'send_group_msg':
 						// 发送群消息：设置群号和消息内容
@@ -730,6 +757,25 @@ export class OneBot implements INodeType {
 						body.user_id = memberInfoUserId;
 						console.log('get_group_member_info参数:', JSON.stringify(body));
 						endpoint = 'get_group_member_info';
+						break;
+					case 'group_poke':
+						// 群戳一戳：设置群号和成员QQ号
+						if (!groupId) {
+							throw new Error('群戳一戳需要有效的群ID，但未提供');
+						}
+						body.group_id = groupId;
+						const pokeUserId = this.getNodeParameter('user_id', index);
+						body.user_id = pokeUserId;
+						console.log('group_poke参数:', JSON.stringify(body));
+						endpoint = 'send_poke';
+						break;
+					case 'set_group_sign':
+						// 设置群签到：设置群号
+						if (!groupId) {
+							throw new Error('设置群签到需要有效的群ID，但未提供');
+						}
+						body.group_id = groupId;
+						endpoint = 'set_group_sign';
 						break;
 					case 'set_group_kick':
 					case 'set_group_ban':
@@ -809,6 +855,7 @@ export class OneBot implements INodeType {
 								break;
 						}
 						break;
+						
 					}
 				}
 
