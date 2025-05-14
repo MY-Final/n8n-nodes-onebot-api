@@ -1,0 +1,56 @@
+{
+  "name": "n8n-nodes-onebot-api",
+  "version": "2.0.0",
+  "description": "OneBot node for n8n workflow, now you can send message to your QQ friend or group. This version includes optimized group and private chat operations and enhanced permission grading. OneBot 节点用于 n8n 工作流，现在您可以向您的 QQ 朋友或群组发送消息。此版本包括优化的群聊和私聊操作以及增强的权限分级。",
+  "keywords": [
+    "n8n-community-node-package",
+    "onebot",
+    "qq",
+    "bot",
+    "automation",
+    "messaging",
+    "qq-group-management"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/MY-Final/n8n-nodes-onebot",
+  "author": {
+    "name": "Final",
+    "email": "mydj666@qq.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MY-Final/n8n-nodes-onebot"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/OneBotApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/OneBot/OneBot.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@types/request-promise-native": "~1.0.15",
+    "@typescript-eslint/parser": "~5.45",
+    "eslint-plugin-n8n-nodes-base": "^1.11.0",
+    "gulp": "^4.0.2",
+    "n8n-core": "*",
+    "n8n-workflow": "*",
+    "prettier": "^2.7.1",
+    "typescript": "~4.8.4"
+  }
+}
