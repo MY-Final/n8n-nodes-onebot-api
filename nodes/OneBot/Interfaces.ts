@@ -5,14 +5,15 @@ import { AllEntities, Entity, PropertiesOf } from 'n8n-workflow';
  * 定义了各个资源类型支持的操作
  */
 export type OneBotMap = {
-	bot: 
+	bot:
 		| 'get_login_info';     // 获取登录信息
-	friend: 
+	friend:
 		| 'get_stranger_info'   // 获取陌生人信息
 		| 'get_friend_list'     // 获取好友列表
 		| 'send_like'           // 发送好友赞
 		| 'friend_poke';        // 私聊戳一戳
-	group: 
+
+	group:
 		| 'get_group_info'        // 获取群信息
 		| 'get_group_list'        // 获取群列表
 		| 'get_group_member_info' // 获取群成员信息
@@ -24,10 +25,10 @@ export type OneBotMap = {
 		| 'set_group_admin'       // 设置群管理员
 		| 'group_poke'           // 群戳一戳
 		| 'set_group_sign';      // 设置群签到
-	message: 
+	message:
 		| 'send_group_msg'     // 发送群消息
 		| 'send_private_msg';  // 发送私聊消息
-	misc: 
+	misc:
 		| 'get_status'        // 获取状态
 		| 'get_version_info'; // 获取版本信息
 };
