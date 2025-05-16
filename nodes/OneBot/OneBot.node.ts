@@ -338,7 +338,25 @@ export class OneBot implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
-						operation: ['get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_admin', 'group_poke'],
+						operation: ['get_group_member_info', 'group_poke'],
+					},
+				},
+			},
+			{
+				displayName: '成员 ID',
+				name: 'user_ids',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupMemberList',
+					loadOptionsDependsOn: ['group_id'],
+				},
+				default: [],
+				description:
+					'选择要操作的群成员，可以选择多个成员',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['set_group_kick', 'set_group_ban', 'set_group_admin'],
 					},
 				},
 			},
@@ -652,7 +670,7 @@ export class OneBot implements INodeType {
 								displayName: '文本内容',
 								name: 'text',
 								type: 'string',
-								default: '不许点进来！。',
+								default: '不许点进来！',
 								description: '转发消息中显示的文本内容',
 							},
 						],
@@ -1065,7 +1083,7 @@ export class OneBot implements INodeType {
 									body.news = newsMessages.news.map(item => ({ text: item.text }));
 								} else {
 									// 确保始终有news字段，即使没有设置
-									body.news = [{ text: "不许点进来！。" }];
+									body.news = [{ text: "不许点进来！" }];
 								}
 								
 								endpoint = 'send_private_forward_msg';
@@ -1240,7 +1258,7 @@ export class OneBot implements INodeType {
 									body.news = newsMessages.news.map(item => ({ text: item.text }));
 								} else {
 									// 确保始终有news字段，即使没有设置
-									body.news = [{ text: "不许点进来！。" }];
+									body.news = [{ text: "不许点进来！" }];
 								}
 								
 								endpoint = 'send_group_forward_msg';
@@ -1405,23 +1423,55 @@ export class OneBot implements INodeType {
 								case 'set_group_kick':
 									// 踢出群成员：设置群号、成员QQ号和拒绝加入请求
 									body.group_id = groupId;
-									const kickUserId = this.getNodeParameter('user_id', index);
-									body.user_id = kickUserId;
-									body.reject_add_request = this.getNodeParameter('reject_add_request', index) as boolean;
-									console.log('set_group_kick参数:', JSON.stringify(body));
-									endpoint = 'set_group_kick';
+									const kickUserId = this.getNodeParameter('user_ids', index) as string[];
+									const rejectAddRequest = this.getNodeParameter('reject_add_request', index) as boolean;
+									
+									// 如果有多个成员ID，则创建多个请求
+									if (Array.isArray(kickUserId) && kickUserId.length > 0) {
+										const kickPromises = kickUserId.map(async (userId) => {
+											const kickBody = {
+												group_id: groupId,
+												user_id: userId,
+												reject_add_request: rejectAddRequest
+											};
+											console.log(`踢出成员 ${userId}, 参数:`, JSON.stringify(kickBody));
+											return await apiRequest.call(this, 'POST', 'set_group_kick', kickBody);
+										});
+										
+										await Promise.all(kickPromises);
+										body = { success: true, message: `已踢出${kickUserId.length}名成员` };
+										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
+									} else {
+										throw new Error('未选择要踢出的成员');
+									}
 									break;
 
 								case 'set_group_ban':
 									// 禁言群成员：设置群号、成员QQ号和禁言时长
 									body.group_id = groupId;
-									const banUserId = this.getNodeParameter('user_id', index);
-									body.user_id = banUserId;
-									body.duration = this.getNodeParameter('duration', index) as number;
-									console.log('set_group_ban参数:', JSON.stringify(body));
-									endpoint = 'set_group_ban';
+									const banUserId = this.getNodeParameter('user_ids', index) as string[];
+									const duration = this.getNodeParameter('duration', index) as number;
+									
+									// 如果有多个成员ID，则创建多个请求
+									if (Array.isArray(banUserId) && banUserId.length > 0) {
+										const banPromises = banUserId.map(async (userId) => {
+											const banBody = {
+												group_id: groupId,
+												user_id: userId,
+												duration: duration
+											};
+											console.log(`禁言成员 ${userId} ${duration}秒, 参数:`, JSON.stringify(banBody));
+											return await apiRequest.call(this, 'POST', 'set_group_ban', banBody);
+										});
+										
+										await Promise.all(banPromises);
+										body = { success: true, message: `已禁言${banUserId.length}名成员` };
+										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
+									} else {
+										throw new Error('未选择要禁言的成员');
+									}
 									break;
-
+									
 								case 'set_group_whole_ban':
 									// 群组全员禁言：设置群号和是否禁言
 									body.group_id = groupId;
@@ -1441,11 +1491,27 @@ export class OneBot implements INodeType {
 								case 'set_group_admin':
 									// 群组设置管理员
 									body.group_id = groupId;
-									const adminUserId = this.getNodeParameter('user_id', index);
-									body.user_id = adminUserId;
-									body.enable = this.getNodeParameter('enable', index) as boolean;
-									console.log('set_group_admin参数:', JSON.stringify(body));
-									endpoint = 'set_group_admin';
+									const adminUserId = this.getNodeParameter('user_ids', index) as string[];
+									const enableAdmin = this.getNodeParameter('enable', index) as boolean;
+									
+									// 如果有多个成员ID，则创建多个请求
+									if (Array.isArray(adminUserId) && adminUserId.length > 0) {
+										const adminPromises = adminUserId.map(async (userId) => {
+											const adminBody = {
+												group_id: groupId,
+												user_id: userId,
+												enable: enableAdmin
+											};
+											console.log(`${enableAdmin ? '设置' : '取消'}成员 ${userId} 的管理员权限, 参数:`, JSON.stringify(adminBody));
+											return await apiRequest.call(this, 'POST', 'set_group_admin', adminBody);
+										});
+										
+										await Promise.all(adminPromises);
+										body = { success: true, message: `已${enableAdmin ? '设置' : '取消'}${adminUserId.length}名成员的管理员权限` };
+										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
+									} else {
+										throw new Error('未选择要设置管理员权限的成员');
+									}
 									break;
 							}
 							break;
@@ -1454,7 +1520,13 @@ export class OneBot implements INodeType {
 					}
 
 					const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
-					const data = await apiRequest.call(this, method, endpoint, body);
+					// 如果是虚拟端点，直接返回本地结果，不再发送请求
+					let data;
+					if (endpoint === 'dummy') {
+						data = body;
+					} else {
+						data = await apiRequest.call(this, method, endpoint, body);
+					}
 					const json = this.helpers.returnJsonArray(data);
 					const executionData = this.helpers.constructExecutionMetaData(json, {
 						itemData: { item: index },
@@ -1686,25 +1758,25 @@ export class OneBot implements INodeType {
 								body.news = newsMessages.news.map(item => ({ text: item.text }));
 							} else {
 								// 如果没有设置文本内容，使用默认的
-								body.news = [{ text: "不许点进来！。" }];
+								body.news = [{ text: "不许点进来！" }];
 							}
 						} catch (e) {
 							// 如果获取失败，使用默认值
-							body.news = [{ text: "不许点进来！。" }];
+							body.news = [{ text: "不许点进来！" }];
 						}
 					} else {
 						// 使用默认值，但更个性化
 						body.summary = '哼哼';
 						body.prompt = '宝宝，我爱你';
 						body.source = '坏蛋！';
-						body.news = [{ text: "不许点进来！。" }];
+						body.news = [{ text: "不许点进来！" }];
 					}
 				} catch (e) {
 					// 如果获取失败，使用默认个性化值
 					body.summary = '哼哼';
 					body.prompt = '宝宝，我爱你';
 					body.source = '坏蛋！';
-					body.news = [{ text: "不许点进来！。" }];
+					body.news = [{ text: "不许点进来！" }];
 				}
 				
 				console.log(`自动转发消息参数:`, JSON.stringify(body));
