@@ -384,6 +384,107 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
+				displayName: '@特定成员',
+				name: 'atUser',
+				type: 'boolean',
+				default: false,
+				description: '在消息中@特定群成员',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: '要@的成员',
+				name: 'atUserId',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupMemberList',
+					loadOptionsDependsOn: ['group_id'],
+				},
+				default: '',
+				description: '选择要@的群成员',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_group_msg'],
+						atUser: [true],
+					},
+				},
+			},
+			{
+				displayName: '发送图片',
+				name: 'sendImage',
+				type: 'boolean',
+				default: false,
+				description: '是否发送图片',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: '图片来源',
+				name: 'imageSource',
+				type: 'options',
+				options: [
+					{
+						name: '网络图片',
+						value: 'url',
+					},
+					{
+						name: '本地图片',
+						value: 'file',
+					},
+				],
+				default: 'url',
+				description: '图片的来源类型',
+				displayOptions: {
+					show: {
+						sendImage: [true],
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: '图片URL',
+				name: 'imageUrl',
+				type: 'string',
+				default: '',
+				placeholder: 'http://example.com/image.jpg',
+				description: '网络图片的URL地址',
+				displayOptions: {
+					show: {
+						sendImage: [true],
+						imageSource: ['url'],
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: '本地图片路径',
+				name: 'imagePath',
+				type: 'string',
+				default: '',
+				placeholder: 'D:/images/example.jpg',
+				description: '本地图片的完整路径',
+				displayOptions: {
+					show: {
+						sendImage: [true],
+						imageSource: ['file'],
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
 				displayName: 'Forward Mode',
 				name: 'forward_mode',
 				type: 'boolean',
@@ -704,7 +805,34 @@ export class OneBot implements INodeType {
 						// 发送私聊消息：设置用户ID和消息内容
 						const privateUserId = this.getNodeParameter('user_id', index);
 						body.user_id = privateUserId;
-						body.message = this.getNodeParameter('message', index) as string;
+						
+						// 获取消息内容
+						let privateMessageContent = this.getNodeParameter('message', index) as string;
+						
+						// 检查是否需要发送图片
+						const privateSendImage = this.getNodeParameter('sendImage', index, false) as boolean;
+						if (privateSendImage) {
+							const imageSource = this.getNodeParameter('imageSource', index) as string;
+							let imagePath = '';
+							
+							if (imageSource === 'url') {
+								imagePath = this.getNodeParameter('imageUrl', index) as string;
+							} else if (imageSource === 'file') {
+								// 本地文件需要添加file://前缀
+								imagePath = 'file://' + this.getNodeParameter('imagePath', index) as string;
+							}
+							
+							// 如果消息内容为空，则只发送图片
+							if (!privateMessageContent.trim()) {
+								// 使用CQ码格式
+								privateMessageContent = `[CQ:image,file=${imagePath}]`;
+							} else {
+								// 否则在消息后添加图片
+								privateMessageContent = `${privateMessageContent}\n[CQ:image,file=${imagePath}]`;
+							}
+						}
+						
+						body.message = privateMessageContent;
 						endpoint = 'send_private_msg';
 						console.log('send_private_msg参数:', JSON.stringify(body));
 						break;
@@ -747,6 +875,46 @@ export class OneBot implements INodeType {
 						if (atAll) {
 							// 在消息前添加@全体成员CQ码
 							messageContent = '[CQ:at,qq=all] ' + messageContent;
+						}
+						
+						// 检查是否需要@特定成员
+						const atUser = this.getNodeParameter('atUser', index, false) as boolean;
+						if (atUser) {
+							const atUserId = this.getNodeParameter('atUserId', index) as string;
+							messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
+						}
+						
+						// 检查是否需要发送图片
+						const sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
+						if (sendImage) {
+							const imageSource = this.getNodeParameter('imageSource', index) as string;
+							let imagePath = '';
+							
+							if (imageSource === 'url') {
+								imagePath = this.getNodeParameter('imageUrl', index) as string;
+							} else if (imageSource === 'file') {
+								// 本地文件需要添加file://前缀
+								imagePath = 'file://' + this.getNodeParameter('imagePath', index) as string;
+							}
+							
+							// 处理不同情况下的消息格式
+							// 1. 只有图片
+							if (!messageContent.trim()) {
+								messageContent = `[CQ:image,file=${imagePath}]`;
+							} 
+							// 2. @全体成员 + 图片
+							else if (atAll && messageContent.trim() === '[CQ:at,qq=all] ') {
+								messageContent = `[CQ:at,qq=all] [CQ:image,file=${imagePath}]`;
+							}
+							// 3. @特定成员 + 图片
+							else if (atUser && messageContent.includes('[CQ:at,qq=') && !messageContent.includes('[CQ:at,qq=all]')) {
+								// 保持@用户的部分，添加图片
+								messageContent = `${messageContent}[CQ:image,file=${imagePath}]`;
+							}
+							// 4. 普通文本 + 图片
+							else {
+								messageContent = `${messageContent}\n[CQ:image,file=${imagePath}]`;
+							}
 						}
 						
 						body.message = messageContent;
