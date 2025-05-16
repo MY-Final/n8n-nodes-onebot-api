@@ -7,6 +7,6 @@
 /dataSources/
 /dataSources.local.xml
 
-   # IDE配置
-   .idea/
-   .vscode/
+# IDE配置
+idea/
+.vscode/
