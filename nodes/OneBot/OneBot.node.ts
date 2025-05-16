@@ -441,6 +441,10 @@ export class OneBot implements INodeType {
 						name: '本地图片',
 						value: 'file',
 					},
+					{
+						name: 'Base64编码',
+						value: 'base64',
+					},
 				],
 				default: 'url',
 				description: '图片的来源类型',
@@ -479,6 +483,25 @@ export class OneBot implements INodeType {
 					show: {
 						sendImage: [true],
 						imageSource: ['file'],
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: 'Base64编码图片',
+				name: 'imageBase64',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				default: '',
+				placeholder: '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/...',
+				description: '图片的Base64编码（不需要包含前缀如"data:image/jpeg;base64,"）',
+				displayOptions: {
+					show: {
+						sendImage: [true],
+						imageSource: ['base64'],
 						resource: ['message'],
 						operation: ['send_private_msg', 'send_group_msg'],
 					},
@@ -820,6 +843,9 @@ export class OneBot implements INodeType {
 							} else if (imageSource === 'file') {
 								// 本地文件需要添加file://前缀
 								imagePath = 'file://' + this.getNodeParameter('imagePath', index) as string;
+							} else if (imageSource === 'base64') {
+								// Base64编码需要添加base64://前缀
+								imagePath = 'base64://' + this.getNodeParameter('imageBase64', index) as string;
 							}
 							
 							// 如果消息内容为空，则只发送图片
@@ -895,6 +921,9 @@ export class OneBot implements INodeType {
 							} else if (imageSource === 'file') {
 								// 本地文件需要添加file://前缀
 								imagePath = 'file://' + this.getNodeParameter('imagePath', index) as string;
+							} else if (imageSource === 'base64') {
+								// Base64编码需要添加base64://前缀
+								imagePath = 'base64://' + this.getNodeParameter('imageBase64', index) as string;
 							}
 							
 							// 处理不同情况下的消息格式
