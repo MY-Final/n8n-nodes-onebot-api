@@ -371,6 +371,19 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
+				displayName: '@全体成员',
+				name: 'atAll',
+				type: 'boolean',
+				default: false,
+				description: '在消息开头添加@全体成员',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_group_msg'],
+					},
+				},
+			},
+			{
 				displayName: 'Forward Mode',
 				name: 'forward_mode',
 				type: 'boolean',
@@ -725,7 +738,18 @@ export class OneBot implements INodeType {
 							throw new Error('发送群消息需要有效的群ID，但未提供');
 						}
 						body.group_id = groupId;
-						body.message = this.getNodeParameter('message', index) as string;
+						
+						// 获取消息内容
+						let messageContent = this.getNodeParameter('message', index) as string;
+						
+						// 检查是否需要@全体成员
+						const atAll = this.getNodeParameter('atAll', index, false) as boolean;
+						if (atAll) {
+							// 在消息前添加@全体成员CQ码
+							messageContent = '[CQ:at,qq=all] ' + messageContent;
+						}
+						
+						body.message = messageContent;
 						endpoint = 'send_group_msg';
 						console.log('send_group_msg参数:', JSON.stringify(body));
 						break;
