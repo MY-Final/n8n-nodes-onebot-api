@@ -158,7 +158,7 @@ export class OneBot implements INodeType {
 					{
 						name: '全员禁言',
 						value: 'set_group_whole_ban',
-						action: 'Set Group Whole Ban', 
+						action: 'Set Group Whole Ban',
 						description: '要求机器人是管理员或者群主',
 					},
 					{
@@ -178,7 +178,7 @@ export class OneBot implements INodeType {
 						value: 'group_poke',
 						action: 'Group Poke',
 						description: '群戳一戳，戳了一下你，嘻嘻',
-					
+
 					},
 					{
 						name: '设置群签到',
@@ -262,7 +262,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
+				description:
 					'选择群组，可以输入群名称或群号进行搜索',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupList',
@@ -287,7 +287,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
+				description:
 					'选择您有管理权限的群组（群主或管理员）',
 				typeOptions: {
 					loadOptionsMethod: 'getManagedGroupList',
@@ -309,7 +309,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
+				description:
 					'选择您是群主的群组（只有群主才能设置管理员）',
 				typeOptions: {
 					loadOptionsMethod: 'getOwnedGroupList',
@@ -600,30 +600,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-					
+
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-					
+
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-					
+
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: { 
+						data: {
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-					
+
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-					
+
 					const managedGroups = [];
-					
+
 					for (const group of groupListResponse.data) {
 						if (group.role && (group.role === 'admin' || group.role === 'owner')) {
 							managedGroups.push({
@@ -633,7 +633,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-						
+
 						try {
 							const query = { group_id: group.group_id, user_id: botId };
 							const memberInfo = await apiRequest.call(this, 'GET', 'get_group_member_info', undefined, query) as {
@@ -641,7 +641,7 @@ export class OneBot implements INodeType {
 									role?: string;
 								}
 							};
-							
+
 							if (memberInfo?.data?.role) {
 								const role = memberInfo.data.role;
 								if (role === 'admin' || role === 'owner') {
@@ -657,11 +657,11 @@ export class OneBot implements INodeType {
 							continue;
 						}
 					}
-					
+
 					if (managedGroups.length === 0) {
 						return [{ name: '没有管理权限的群聊', value: '', description: '机器人不是任何群的管理员或群主' }];
 					}
-					
+
 					return managedGroups;
 				} catch (error) {
 					console.error('获取管理的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -673,30 +673,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-					
+
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-					
+
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-					
+
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: { 
+						data: {
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-					
+
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-					
+
 					const ownedGroups = [];
-					
+
 					for (const group of groupListResponse.data) {
 						// 先检查直接返回的角色信息
 						if (group.role === 'owner') {
@@ -707,7 +707,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-						
+
 						// 如果没有直接的角色信息，查询成员信息
 						if (!group.role) {
 							try {
@@ -717,7 +717,7 @@ export class OneBot implements INodeType {
 										role?: string;
 									}
 								};
-								
+
 								if (memberInfo?.data?.role === 'owner') {
 									ownedGroups.push({
 										name: `${group.group_name} (群主)`,
@@ -731,11 +731,11 @@ export class OneBot implements INodeType {
 							}
 						}
 					}
-					
+
 					if (ownedGroups.length === 0) {
 						return [{ name: '没有群主权限的群聊', value: '', description: '机器人不是任何群的群主' }];
 					}
-					
+
 					return ownedGroups;
 				} catch (error) {
 					console.error('获取机器人是群主的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -747,7 +747,7 @@ export class OneBot implements INodeType {
 
 	/**
 	 * 检查机器人在群中的权限
-	 * 
+	 *
 	 * @param executeFunctions - 执行函数上下文
 	 * @param groupId - 群ID
 	 * @returns 包含权限信息的对象
@@ -759,31 +759,31 @@ export class OneBot implements INodeType {
 		try {
 			// 1. 获取机器人的登录信息
 			const loginInfo = await apiRequest.call(executeFunctions, 'GET', 'get_login_info');
-			
+
 			if (!loginInfo?.data?.user_id) {
 				console.error('获取登录信息失败，无法检查权限');
 				return { isAdmin: false, isOwner: false, canOperate: false };
 			}
-			
+
 			const botId = loginInfo.data.user_id;
 			console.log(`当前机器人QQ: ${botId}`);
-			
+
 			// 2. 获取机器人在群中的信息
 			const query = { group_id: groupId, user_id: botId };
 			const memberInfo = await apiRequest.call(executeFunctions, 'GET', 'get_group_member_info', undefined, query);
-			
+
 			if (!memberInfo?.data) {
 				console.error('获取群成员信息失败，无法检查权限');
 				return { isAdmin: false, isOwner: false, canOperate: false };
 			}
-			
+
 			// 3. 检查权限
 			const role = memberInfo.data.role || '';
 			const isOwner = role === 'owner';
 			const isAdmin = role === 'admin' || isOwner;
-			
+
 			console.log(`机器人在群 ${groupId} 中的角色: ${role}, 是管理员: ${isAdmin}, 是群主: ${isOwner}`);
-			
+
 			return {
 				isAdmin,
 				isOwner,
@@ -809,7 +809,7 @@ export class OneBot implements INodeType {
 			let action: IDataObject = { operation: 'unknown' };
 			let body: IDataObject = {};
 			let endpoint: string = '';
-			
+
 			try {
 				// 获取操作类型
 				action.operation = this.getNodeParameter('operation', index) as string;
@@ -828,16 +828,16 @@ export class OneBot implements INodeType {
 						// 发送私聊消息：设置用户ID和消息内容
 						const privateUserId = this.getNodeParameter('user_id', index);
 						body.user_id = privateUserId;
-						
+
 						// 获取消息内容
 						let privateMessageContent = this.getNodeParameter('message', index) as string;
-						
+
 						// 检查是否需要发送图片
 						const privateSendImage = this.getNodeParameter('sendImage', index, false) as boolean;
 						if (privateSendImage) {
 							const imageSource = this.getNodeParameter('imageSource', index) as string;
 							let imagePath = '';
-							
+
 							if (imageSource === 'url') {
 								imagePath = this.getNodeParameter('imageUrl', index) as string;
 							} else if (imageSource === 'file') {
@@ -847,7 +847,7 @@ export class OneBot implements INodeType {
 								// Base64编码需要添加base64://前缀
 								imagePath = 'base64://' + this.getNodeParameter('imageBase64', index) as string;
 							}
-							
+
 							// 如果消息内容为空，则只发送图片
 							if (!privateMessageContent.trim()) {
 								// 使用CQ码格式
@@ -857,7 +857,7 @@ export class OneBot implements INodeType {
 								privateMessageContent = `${privateMessageContent}\n[CQ:image,file=${imagePath}]`;
 							}
 						}
-						
+
 						body.message = privateMessageContent;
 						endpoint = 'send_private_msg';
 						console.log('send_private_msg参数:', JSON.stringify(body));
@@ -892,30 +892,30 @@ export class OneBot implements INodeType {
 							throw new Error('发送群消息需要有效的群ID，但未提供');
 						}
 						body.group_id = groupId;
-						
+
 						// 获取消息内容
 						let messageContent = this.getNodeParameter('message', index) as string;
-						
+
 						// 检查是否需要@全体成员
 						const atAll = this.getNodeParameter('atAll', index, false) as boolean;
 						if (atAll) {
 							// 在消息前添加@全体成员CQ码
 							messageContent = '[CQ:at,qq=all] ' + messageContent;
 						}
-						
+
 						// 检查是否需要@特定成员
 						const atUser = this.getNodeParameter('atUser', index, false) as boolean;
 						if (atUser) {
 							const atUserId = this.getNodeParameter('atUserId', index) as string;
 							messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
 						}
-						
+
 						// 检查是否需要发送图片
 						const sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
 						if (sendImage) {
 							const imageSource = this.getNodeParameter('imageSource', index) as string;
 							let imagePath = '';
-							
+
 							if (imageSource === 'url') {
 								imagePath = this.getNodeParameter('imageUrl', index) as string;
 							} else if (imageSource === 'file') {
@@ -925,12 +925,12 @@ export class OneBot implements INodeType {
 								// Base64编码需要添加base64://前缀
 								imagePath = 'base64://' + this.getNodeParameter('imageBase64', index) as string;
 							}
-							
+
 							// 处理不同情况下的消息格式
 							// 1. 只有图片
 							if (!messageContent.trim()) {
 								messageContent = `[CQ:image,file=${imagePath}]`;
-							} 
+							}
 							// 2. @全体成员 + 图片
 							else if (atAll && messageContent.trim() === '[CQ:at,qq=all] ') {
 								messageContent = `[CQ:at,qq=all] [CQ:image,file=${imagePath}]`;
@@ -945,7 +945,7 @@ export class OneBot implements INodeType {
 								messageContent = `${messageContent}\n[CQ:image,file=${imagePath}]`;
 							}
 						}
-						
+
 						body.message = messageContent;
 						endpoint = 'send_group_msg';
 						console.log('send_group_msg参数:', JSON.stringify(body));
@@ -1008,7 +1008,7 @@ export class OneBot implements INodeType {
 						}
 						// 检查权限
 						const permissionInfo = await OneBot.checkBotGroupPermission(this, groupId);
-						
+
 						// 根据不同操作进行特定的权限检查
 						switch (action.operation) {
 							case 'set_group_admin':
@@ -1018,7 +1018,7 @@ export class OneBot implements INodeType {
 								}
 								console.log(`机器人是群 ${groupId} 的群主，可以设置管理员`);
 								break;
-							
+
 							default:
 								// 其他操作需要管理员或群主权限
 								if (!permissionInfo.isAdmin) {
@@ -1026,7 +1026,7 @@ export class OneBot implements INodeType {
 								}
 								console.log(`机器人在群 ${groupId} 中有管理员权限，可以执行 ${action.operation} 操作`);
 						}
-						
+
 						// 根据不同操作设置相应参数
 						switch (action.operation) {
 							case 'set_group_kick':
@@ -1038,7 +1038,7 @@ export class OneBot implements INodeType {
 								console.log('set_group_kick参数:', JSON.stringify(body));
 								endpoint = 'set_group_kick';
 								break;
-								
+
 							case 'set_group_ban':
 								// 禁言群成员：设置群号、成员QQ号和禁言时长
 								body.group_id = groupId;
@@ -1048,7 +1048,7 @@ export class OneBot implements INodeType {
 								console.log('set_group_ban参数:', JSON.stringify(body));
 								endpoint = 'set_group_ban';
 								break;
-								
+
 							case 'set_group_whole_ban':
 								// 群组全员禁言：设置群号和是否禁言
 								body.group_id = groupId;
@@ -1056,7 +1056,7 @@ export class OneBot implements INodeType {
 								console.log('set_group_whole_ban参数:', JSON.stringify(body));
 								endpoint = 'set_group_whole_ban';
 								break;
-							
+
 							case 'set_group_name':
 								// 设置群名称：设置群号和新群名
 								body.group_id = groupId;
@@ -1064,7 +1064,7 @@ export class OneBot implements INodeType {
 								console.log('set_group_name参数:', JSON.stringify(body));
 								endpoint = 'set_group_name';
 								break;
-								
+
 							case 'set_group_admin':
 								// 群组设置管理员
 								body.group_id = groupId;
@@ -1076,7 +1076,7 @@ export class OneBot implements INodeType {
 								break;
 						}
 						break;
-						
+
 					}
 				}
 
@@ -1090,11 +1090,11 @@ export class OneBot implements INodeType {
 				responseData.push(...executionData);
 			} catch (error) {
 				console.error(`执行操作 ${action.operation} 时出错:`, error instanceof Error ? error.message : String(error));
-				
+
 				// 创建错误响应数据
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				const errorItem = {
-					json: { 
+					json: {
 						error: errorMessage,
 						success: false
 					}
@@ -1102,7 +1102,7 @@ export class OneBot implements INodeType {
 				const executionData = this.helpers.constructExecutionMetaData([errorItem], {
 					itemData: { item: index },
 				});
-				
+
 				responseData.push(...executionData);
 			}
 		}

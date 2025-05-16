@@ -70,3 +70,4 @@
 - [ ] get_ai_characters
 - [ ] send_group_ai_record
 - [ ] send_poke
+

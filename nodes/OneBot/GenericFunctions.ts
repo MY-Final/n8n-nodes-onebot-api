@@ -10,7 +10,7 @@ type OneBotCredentials = {
 
 /**
  * 发送API请求到OneBot服务器
- * 
+ *
  * @param this - 执行函数上下文
  * @param method - HTTP请求方法（GET/POST等）
  * @param endpoint - API端点路径
@@ -33,19 +33,19 @@ export async function apiRequest(
 	if (!endpoint.startsWith('/')) {
 		endpoint = '/' + endpoint;
 	}
-	
+
 	// 处理查询参数，确保所有值都被正确序列化
 	const processedQuery: Record<string, string | number | boolean> = {};
-	
+
 	if (query) {
 		console.log('原始查询参数:', JSON.stringify(query));
-		
+
 		for (const key in query) {
 			if (query[key] !== undefined && query[key] !== null) {
 				// 确保数值类型参数正确传递
 				if (typeof query[key] === 'number') {
 					processedQuery[key] = query[key] as number;
-				} 
+				}
 				// 字符串参数
 				else if (typeof query[key] === 'string') {
 					processedQuery[key] = query[key] as string;
@@ -60,7 +60,7 @@ export async function apiRequest(
 				}
 			}
 		}
-		
+
 		console.log('处理后的查询参数:', JSON.stringify(processedQuery));
 	}
 
@@ -76,9 +76,9 @@ export async function apiRequest(
 		qs: processedQuery, // 使用处理后的查询参数
 		json: true,
 	};
-	
-	console.log(`发送${method}请求到 ${baseURL}${endpoint}`, 
-		body ? `请求体: ${JSON.stringify(body)}` : '', 
+
+	console.log(`发送${method}请求到 ${baseURL}${endpoint}`,
+		body ? `请求体: ${JSON.stringify(body)}` : '',
 		processedQuery && Object.keys(processedQuery).length > 0 ? `查询参数: ${JSON.stringify(processedQuery)}` : ''
 	);
 
@@ -87,16 +87,17 @@ export async function apiRequest(
 		const response = await this.helpers.httpRequestWithAuthentication.call(this, 'oneBotApi', options);
 		console.log(`API响应状态: ${response.status || '未知'}`);
 		console.log(`API响应内容: ${JSON.stringify(response).substring(0, 500)}${JSON.stringify(response).length > 500 ? '...(省略)' : ''}`);
-		
+
 		// 检查响应是否成功
 		if (response.status === 'failed') {
 			console.error('API请求失败:', response.message || '未知错误');
 			throw new Error(`OneBot API错误: ${response.message || '未知错误'}`);
 		}
-		
+
 		return response;
 	} catch (error) {
 		console.error('API请求失败:', error instanceof Error ? error.message : String(error));
 		throw error;
 	}
 }
+
