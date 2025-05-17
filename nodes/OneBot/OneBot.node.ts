@@ -12,10 +12,14 @@ import {
 import { apiRequest } from './GenericFunctions';
 import { LoginInfo } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
+import { executeBotOperation } from './BotActions';
+import { executeFriendOperation } from './FriendActions';
+import { executeGroupOperation } from './GroupActions';
+import { executeMiscOperation } from './MiscActions';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'OneBot',
+		displayName: 'OneBot-api',
 		name: 'oneBot',
 		icon: 'file:onebot.svg',
 		description: 'Consume OneBot API',
@@ -158,7 +162,7 @@ export class OneBot implements INodeType {
 					{
 						name: '全员禁言',
 						value: 'set_group_whole_ban',
-						action: 'Set Group Whole Ban',
+						action: 'Set Group Whole Ban', 
 						description: '要求机器人是管理员或者群主',
 					},
 					{
@@ -262,7 +266,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description:
+				description: 
 					'选择群组，可以输入群名称或群号进行搜索',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupList',
@@ -274,7 +278,6 @@ export class OneBot implements INodeType {
 						operation: [
 							'get_group_info',
 							'get_group_member_info',
-							'get_group_list',
 							'get_group_member_list',
 							'send_group_msg',
 							'group_poke',
@@ -287,7 +290,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description:
+				description: 
 					'选择您有管理权限的群组（群主或管理员）',
 				typeOptions: {
 					loadOptionsMethod: 'getManagedGroupList',
@@ -309,7 +312,7 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description:
+				description: 
 					'选择您是群主的群组（只有群主才能设置管理员）',
 				typeOptions: {
 					loadOptionsMethod: 'getOwnedGroupList',
@@ -611,21 +614,37 @@ export class OneBot implements INodeType {
 								description: '消息发送者的昵称',
 							},
 							{
-								displayName: '消息内容',
-								name: 'content',
-								type: 'string',
-								typeOptions: {
-									rows: 4,
-								},
-								default: '',
-								description: '消息文本内容，支持文本和CQ码',
-							},
-							{
 								displayName: '添加图片',
 								name: 'addImage',
 								type: 'boolean',
 								default: false,
-								description: '是否在当前消息中添加图片',
+								description: '是否添加图片',
+							},
+							{
+								displayName: '图片来源',
+								name: 'imageSource',
+								type: 'options',
+								options: [
+									{
+										name: '网络图片',
+										value: 'url',
+									},
+									{
+										name: '本地图片',
+										value: 'file',
+									},
+									{
+										name: 'Base64编码',
+										value: 'base64',
+									},
+								],
+								default: 'url',
+								description: '图片的来源类型',
+								displayOptions: {
+									show: {
+										addImage: [true],
+									},
+								},
 							},
 							{
 								displayName: '图片URL',
@@ -637,6 +656,38 @@ export class OneBot implements INodeType {
 								displayOptions: {
 									show: {
 										addImage: [true],
+										imageSource: ['url'],
+									},
+								},
+							},
+							{
+								displayName: '本地图片路径',
+								name: 'imagePath',
+								type: 'string',
+								default: '',
+								placeholder: 'D:/images/example.jpg',
+								description: '本地图片的完整路径',
+								displayOptions: {
+									show: {
+										addImage: [true],
+										imageSource: ['file'],
+									},
+								},
+							},
+							{
+								displayName: 'Base64编码图片',
+								name: 'imageBase64',
+								type: 'string',
+								typeOptions: {
+									rows: 4,
+								},
+								default: '',
+								placeholder: '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/...',
+								description: '图片的Base64编码（不需要包含前缀如"data:image/jpeg;base64,"）',
+								displayOptions: {
+									show: {
+										addImage: [true],
+										imageSource: ['base64'],
 									},
 								},
 							},
@@ -764,30 +815,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-
+					
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-
+					
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-
+					
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: {
+						data: { 
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-
+					
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-
+					
 					const managedGroups = [];
-
+					
 					for (const group of groupListResponse.data) {
 						if (group.role && (group.role === 'admin' || group.role === 'owner')) {
 							managedGroups.push({
@@ -797,7 +848,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-
+						
 						try {
 							const query = { group_id: group.group_id, user_id: botId };
 							const memberInfo = await apiRequest.call(this, 'GET', 'get_group_member_info', undefined, query) as {
@@ -805,7 +856,7 @@ export class OneBot implements INodeType {
 									role?: string;
 								}
 							};
-
+							
 							if (memberInfo?.data?.role) {
 								const role = memberInfo.data.role;
 								if (role === 'admin' || role === 'owner') {
@@ -821,11 +872,11 @@ export class OneBot implements INodeType {
 							continue;
 						}
 					}
-
+					
 					if (managedGroups.length === 0) {
 						return [{ name: '没有管理权限的群聊', value: '', description: '机器人不是任何群的管理员或群主' }];
 					}
-
+					
 					return managedGroups;
 				} catch (error) {
 					console.error('获取管理的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -837,30 +888,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-
+					
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-
+					
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-
+					
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: {
+						data: { 
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-
+					
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-
+					
 					const ownedGroups = [];
-
+					
 					for (const group of groupListResponse.data) {
 						// 先检查直接返回的角色信息
 						if (group.role === 'owner') {
@@ -871,7 +922,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-
+						
 						// 如果没有直接的角色信息，查询成员信息
 						if (!group.role) {
 							try {
@@ -881,7 +932,7 @@ export class OneBot implements INodeType {
 										role?: string;
 									}
 								};
-
+								
 								if (memberInfo?.data?.role === 'owner') {
 									ownedGroups.push({
 										name: `${group.group_name} (群主)`,
@@ -895,11 +946,11 @@ export class OneBot implements INodeType {
 							}
 						}
 					}
-
+					
 					if (ownedGroups.length === 0) {
 						return [{ name: '没有群主权限的群聊', value: '', description: '机器人不是任何群的群主' }];
 					}
-
+					
 					return ownedGroups;
 				} catch (error) {
 					console.error('获取机器人是群主的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -909,55 +960,7 @@ export class OneBot implements INodeType {
 		},
 	};
 
-	/**
-	 * 检查机器人在群中的权限
-	 *
-	 * @param executeFunctions - 执行函数上下文
-	 * @param groupId - 群ID
-	 * @returns 包含权限信息的对象
-	 */
-	private static async checkBotGroupPermission(
-		executeFunctions: IExecuteFunctions,
-		groupId: string | number
-	): Promise<{ isAdmin: boolean; isOwner: boolean; canOperate: boolean }> {
-		try {
-			// 1. 获取机器人的登录信息
-			const loginInfo = await apiRequest.call(executeFunctions, 'GET', 'get_login_info');
-
-			if (!loginInfo?.data?.user_id) {
-				console.error('获取登录信息失败，无法检查权限');
-				return { isAdmin: false, isOwner: false, canOperate: false };
-			}
-
-			const botId = loginInfo.data.user_id;
-			console.log(`当前机器人QQ: ${botId}`);
-
-			// 2. 获取机器人在群中的信息
-			const query = { group_id: groupId, user_id: botId };
-			const memberInfo = await apiRequest.call(executeFunctions, 'GET', 'get_group_member_info', undefined, query);
-
-			if (!memberInfo?.data) {
-				console.error('获取群成员信息失败，无法检查权限');
-				return { isAdmin: false, isOwner: false, canOperate: false };
-			}
-
-			// 3. 检查权限
-			const role = memberInfo.data.role || '';
-			const isOwner = role === 'owner';
-			const isAdmin = role === 'admin' || isOwner;
-
-			console.log(`机器人在群 ${groupId} 中的角色: ${role}, 是管理员: ${isAdmin}, 是群主: ${isOwner}`);
-
-			return {
-				isAdmin,
-				isOwner,
-				canOperate: isAdmin // 只有管理员或群主才能操作
-			};
-		} catch (error) {
-			console.error('检查权限时出错:', error instanceof Error ? error.message : String(error));
-			return { isAdmin: false, isOwner: false, canOperate: false };
-		}
-	}
+	// checkBotGroupPermission方法已移至GroupActions.ts
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		// 用于保存所有响应
@@ -973,30 +976,66 @@ export class OneBot implements INodeType {
 		// 如果只有一个输入项，正常处理
 		if (!autoForwardMode) {
 			// 处理单个输入项
-			for (let index = 0; index < itemsLength; index++) {
-				// 初始化变量
-				let action: IDataObject = { operation: 'unknown' };
-				let body: IDataObject = {};
-				let endpoint: string = '';
+		for (let index = 0; index < itemsLength; index++) {
+			// 初始化变量
+			let action: IDataObject = { operation: 'unknown' };
+			let body: IDataObject = {};
+			let endpoint: string = '';
+			
+			try {
+				// 获取操作类型及资源类型
+				action.operation = this.getNodeParameter('operation', index) as string;
+				const resource = this.getNodeParameter('resource', index) as string;
+				console.log(`正在执行操作: ${action.operation}, 资源类型: ${resource}`);
+				
+				// 根据资源类型使用对应的模块处理
+				if (resource === 'bot') {
+					const botActionResponse = await executeBotOperation.call(this, index);
+					const json = this.helpers.returnJsonArray(botActionResponse);
+					const executionData = this.helpers.constructExecutionMetaData(json, {
+						itemData: { item: index },
+					});
+					responseData.push(...executionData);
+					continue; // 跳过下面的处理
+				} else if (resource === 'friend') {
+					const friendActionResponse = await executeFriendOperation.call(this, index);
+					const json = this.helpers.returnJsonArray(friendActionResponse);
+					const executionData = this.helpers.constructExecutionMetaData(json, {
+						itemData: { item: index },
+					});
+					responseData.push(...executionData);
+					continue; // 跳过下面的处理
+				} else if (resource === 'group') {
+					const groupActionResponse = await executeGroupOperation.call(this, index);
+					const json = this.helpers.returnJsonArray(groupActionResponse);
+					const executionData = this.helpers.constructExecutionMetaData(json, {
+						itemData: { item: index },
+					});
+					responseData.push(...executionData);
+					continue; // 跳过下面的处理
+				} else if (resource === 'misc') {
+					const miscActionResponse = await executeMiscOperation.call(this, index);
+					const json = this.helpers.returnJsonArray(miscActionResponse);
+					const executionData = this.helpers.constructExecutionMetaData(json, {
+						itemData: { item: index },
+					});
+					responseData.push(...executionData);
+					continue; // 跳过下面的处理
+				}
 
-				try {
-					// 获取操作类型
-					action.operation = this.getNodeParameter('operation', index) as string;
-					console.log(`正在执行操作: ${action.operation}`);
-
-					// 获取并处理群组ID
-					let groupId: string | number | undefined;
+				// 获取并处理群组ID
+				let groupId: string | number | undefined;
 					if (['send_group_msg', 'get_group_info', 'get_group_member_list', 'get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_whole_ban', 'set_group_name', 'set_group_admin', 'group_poke', 'set_group_sign'].includes(action.operation as string)) {
-						groupId = this.getNodeParameter('group_id', index) as string | number;
-						console.log('获取到group_id:', groupId, '类型:', typeof groupId);
-					}
+					groupId = this.getNodeParameter('group_id', index) as string | number;
+					console.log('获取到group_id:', groupId, '类型:', typeof groupId);
+				}
 
-					// 根据操作类型设置body和endpoint
-					switch (action.operation) {
-						case 'send_private_msg':
-							// 发送私聊消息：设置用户ID和消息内容
-							const privateUserId = this.getNodeParameter('user_id', index);
-							body.user_id = privateUserId;
+				// 根据操作类型设置body和endpoint
+				switch (action.operation) {
+					case 'send_private_msg':
+						// 发送私聊消息：设置用户ID和消息内容
+						const privateUserId = this.getNodeParameter('user_id', index);
+						body.user_id = privateUserId;
 
 							// 检查是否使用转发模式
 							const privateForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
@@ -1007,9 +1046,11 @@ export class OneBot implements INodeType {
 									messages: Array<{
 										user_id: string;
 										nickname: string;
-										content: string;
 										addImage: boolean;
+										imageSource?: string;
 										imageUrl?: string;
+										imagePath?: string;
+										imageBase64?: string;
 									}>;
 								};
 								
@@ -1029,28 +1070,36 @@ export class OneBot implements INodeType {
 								
 								// 转换为OneBot API所需的格式
 								const messages = forwardMessages.messages.map(msg => {
-									// 处理消息内容，支持CQ码
-									let content = msg.content || '';
+									// 默认使用空内容
+									let content: any = '';
 									
 									// 检查是否需要添加图片
 									if (msg.addImage) {
 										try {
 											let imagePath = '';
 											
-											// 使用简化后的图片URL
-											imagePath = msg.imageUrl || '';
+											// 根据图片来源获取图片路径
+											const imageSource = msg.imageSource || 'url';
+											
+											if (imageSource === 'url') {
+												// 网络图片
+												imagePath = msg.imageUrl || '';
+											} else if (imageSource === 'file') {
+												// 本地文件需要添加file://前缀
+												const filePath = msg.imagePath || '';
+												imagePath = filePath ? 'file://' + filePath : '';
+											} else if (imageSource === 'base64') {
+												// Base64编码需要添加base64://前缀
+												const base64Data = msg.imageBase64 || '';
+												imagePath = base64Data ? 'base64://' + base64Data : '';
+											}
 											
 											// 添加图片CQ码
 											if (imagePath && imagePath.trim() !== '') {
 												// 如果消息内容为空，则只发送图片
-												if (!content.trim()) {
-													content = `[CQ:image,file=${imagePath}]`;
-												} else {
-													// 否则在消息后添加图片
-													content = `${content}\n[CQ:image,file=${imagePath}]`;
-												}
+												content = `[CQ:image,file=${imagePath}]`;
 											} else {
-												console.log('转发消息中图片URL为空，跳过添加图片');
+												console.log('转发消息中图片路径为空，跳过添加图片');
 											}
 										} catch (error) {
 											console.error('处理转发消息图片时出错:', error instanceof Error ? error.message : String(error));
@@ -1058,12 +1107,16 @@ export class OneBot implements INodeType {
 										}
 									}
 									
+									// 确保使用用户输入的user_id和nickname，为空时使用默认值
+									const userId = msg.user_id && msg.user_id.trim() !== '' ? msg.user_id : '10000';
+									const nickname = msg.nickname && msg.nickname.trim() !== '' ? msg.nickname : '用户';
+									
 									return {
 										type: 'node',
 										data: {
-											user_id: msg.user_id,
-											nickname: msg.nickname,
-											content: content,
+											user_id: userId,
+											nickname: nickname,
+											content
 										}
 									};
 								});
@@ -1120,12 +1173,9 @@ export class OneBot implements INodeType {
 										// 只有当图片路径不为空时才添加图片
 										if (imagePath && imagePath.trim() !== '') {
 											console.log(`[私聊消息] 图片路径有效，添加图片CQ码`);
-											// 如果消息内容为空，则只发送图片
 											if (!privateMessageContent.trim()) {
-												// 使用CQ码格式
 												privateMessageContent = `[CQ:image,file=${imagePath}]`;
 											} else {
-												// 否则在消息后添加图片
 												privateMessageContent = `${privateMessageContent}\n[CQ:image,file=${imagePath}]`;
 											}
 										} else {
@@ -1138,40 +1188,17 @@ export class OneBot implements INodeType {
 								}
 
 								body.message = privateMessageContent;
-								endpoint = 'send_private_msg';
-								console.log('send_private_msg参数:', JSON.stringify(body));
+						endpoint = 'send_private_msg';
+						console.log('send_private_msg参数:', JSON.stringify(body));
 							}
-							break;
-						case 'get_stranger_info':
-							// 获取陌生人信息：设置用户QQ号
-							const strangerUserId = this.getNodeParameter('user_id', index);
-							body.user_id = strangerUserId;
-							endpoint = 'get_stranger_info';
-							console.log('get_stranger_info参数:', JSON.stringify(body));
-							break;
-						case 'send_like':
-							// 发送好友赞：设置用户QQ号和点赞次数
-							// user_id: 好友QQ号
-							// times: 点赞次数，每个好友每天最多10次
-							const likeUserId = this.getNodeParameter('user_id', index);
-							body.user_id = likeUserId;
-							body.times = this.getNodeParameter('times', index) as number;
-							endpoint = 'send_like';
-							console.log('send_like参数:', JSON.stringify(body));
-							break;
-						case 'send_friend_poke':
-							// 私聊戳一戳：设置用户QQ号
-							const friendPokeUserId = this.getNodeParameter('user_id', index);
-							body.user_id = friendPokeUserId;
-							console.log('send_friend_poke参数:', JSON.stringify(body));
-							endpoint = 'send_poke';
-							break;
-						case 'send_group_msg':
-							// 发送群消息：设置群号和消息内容
-							if (!groupId) {
-								throw new Error('发送群消息需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
+						break;
+					// friend资源相关的操作已移至FriendActions.ts
+					case 'send_group_msg':
+						// 发送群消息：设置群号和消息内容
+						if (!groupId) {
+							throw new Error('发送群消息需要有效的群ID，但未提供');
+						}
+						body.group_id = groupId;
 
 							// 检查是否使用转发模式
 							const groupForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
@@ -1182,9 +1209,11 @@ export class OneBot implements INodeType {
 									messages: Array<{
 										user_id: string;
 										nickname: string;
-										content: string;
 										addImage: boolean;
+										imageSource?: string;
 										imageUrl?: string;
+										imagePath?: string;
+										imageBase64?: string;
 									}>;
 								};
 								
@@ -1204,28 +1233,36 @@ export class OneBot implements INodeType {
 								
 								// 转换为OneBot API所需的格式
 								const messages = forwardMessages.messages.map(msg => {
-									// 处理消息内容，支持CQ码
-									let content = msg.content || '';
+									// 默认使用空内容
+									let content: any = '';
 									
 									// 检查是否需要添加图片
 									if (msg.addImage) {
 										try {
 											let imagePath = '';
 											
-											// 使用简化后的图片URL
-											imagePath = msg.imageUrl || '';
+											// 根据图片来源获取图片路径
+											const imageSource = msg.imageSource || 'url';
+											
+											if (imageSource === 'url') {
+												// 网络图片
+												imagePath = msg.imageUrl || '';
+											} else if (imageSource === 'file') {
+												// 本地文件需要添加file://前缀
+												const filePath = msg.imagePath || '';
+												imagePath = filePath ? 'file://' + filePath : '';
+											} else if (imageSource === 'base64') {
+												// Base64编码需要添加base64://前缀
+												const base64Data = msg.imageBase64 || '';
+												imagePath = base64Data ? 'base64://' + base64Data : '';
+											}
 											
 											// 添加图片CQ码
 											if (imagePath && imagePath.trim() !== '') {
 												// 如果消息内容为空，则只发送图片
-												if (!content.trim()) {
-													content = `[CQ:image,file=${imagePath}]`;
-												} else {
-													// 否则在消息后添加图片
-													content = `${content}\n[CQ:image,file=${imagePath}]`;
-												}
+												content = `[CQ:image,file=${imagePath}]`;
 											} else {
-												console.log('群聊转发消息中图片URL为空，跳过添加图片');
+												console.log('群聊转发消息中图片路径为空，跳过添加图片');
 											}
 										} catch (error) {
 											console.error('处理群聊转发消息图片时出错:', error instanceof Error ? error.message : String(error));
@@ -1233,12 +1270,16 @@ export class OneBot implements INodeType {
 										}
 									}
 									
+									// 确保使用用户输入的user_id和nickname，为空时使用默认值
+									const userId = msg.user_id && msg.user_id.trim() !== '' ? msg.user_id : '10000';
+									const nickname = msg.nickname && msg.nickname.trim() !== '' ? msg.nickname : '用户';
+									
 									return {
 										type: 'node',
 										data: {
-											user_id: msg.user_id,
-											nickname: msg.nickname,
-											content: content,
+											user_id: userId,
+											nickname: nickname,
+											content
 										}
 									};
 								});
@@ -1337,189 +1378,15 @@ export class OneBot implements INodeType {
 								}
 
 								body.message = messageContent;
-								endpoint = 'send_group_msg';
-								console.log('send_group_msg参数:', JSON.stringify(body));
+						endpoint = 'send_group_msg';
+						console.log('send_group_msg参数:', JSON.stringify(body));
 							}
-							break;
-						case 'get_group_member_list':
-							// 获取群成员列表：设置群号
-							if (!groupId) {
-								throw new Error('获取群成员列表需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
-							endpoint = 'get_group_member_list';
-							console.log('get_group_member_list参数:', JSON.stringify(body));
-							break;
-						case 'get_group_info':
-							// 获取群信息：设置群号
-							if (!groupId) {
-								throw new Error('获取群信息需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
-							endpoint = 'get_group_info';
-							console.log('get_group_info参数:', JSON.stringify(body));
-							break;
-						case 'get_group_member_info':
-							// 获取群成员信息：设置群号和成员QQ号
-							if (!groupId) {
-								throw new Error('获取群成员信息需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
-							const memberInfoUserId = this.getNodeParameter('user_id', index);
-							body.user_id = memberInfoUserId;
-							console.log('get_group_member_info参数:', JSON.stringify(body));
-							endpoint = 'get_group_member_info';
-							break;
-						case 'group_poke':
-							// 群戳一戳：设置群号和成员QQ号
-							if (!groupId) {
-								throw new Error('群戳一戳需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
-							const pokeUserId = this.getNodeParameter('user_id', index);
-							body.user_id = pokeUserId;
-							console.log('group_poke参数:', JSON.stringify(body));
-							endpoint = 'send_poke';
-							break;
-						case 'set_group_sign':
-							// 设置群签到：设置群号
-							if (!groupId) {
-								throw new Error('设置群签到需要有效的群ID，但未提供');
-							}
-							body.group_id = groupId;
-							endpoint = 'set_group_sign';
-							break;
-						case 'set_group_kick':
-						case 'set_group_ban':
-						case 'set_group_whole_ban':
-						case 'set_group_name':
-						case 'set_group_admin': {
-							if (!groupId) {
-								throw new Error('操作需要有效的群ID，但未提供');
-							}
-							// 检查权限
-							const permissionInfo = await OneBot.checkBotGroupPermission(this, groupId);
+						break;
+					// group资源相关的操作已移至GroupActions.ts
+									// group资源相关的操作已移至GroupActions.ts
+				}
 
-							// 根据不同操作进行特定的权限检查
-							switch (action.operation) {
-								case 'set_group_admin':
-									// 设置管理员需要群主权限
-									if (!permissionInfo.isOwner) {
-										throw new Error(`无法执行操作: 设置管理员需要群主权限，当前机器人不是群 ${groupId} 的群主`);
-									}
-									console.log(`机器人是群 ${groupId} 的群主，可以设置管理员`);
-									break;
-
-								default:
-									// 其他操作需要管理员或群主权限
-									if (!permissionInfo.isAdmin) {
-										throw new Error(`无法执行操作: ${action.operation} 需要管理员权限，当前机器人不是群 ${groupId} 的管理员或群主`);
-									}
-									console.log(`机器人在群 ${groupId} 中有管理员权限，可以执行 ${action.operation} 操作`);
-							}
-
-							// 根据不同操作设置相应参数
-							switch (action.operation) {
-								case 'set_group_kick':
-									// 踢出群成员：设置群号、成员QQ号和拒绝加入请求
-									body.group_id = groupId;
-									const kickUserId = this.getNodeParameter('user_ids', index) as string[];
-									const rejectAddRequest = this.getNodeParameter('reject_add_request', index) as boolean;
-									
-									// 如果有多个成员ID，则创建多个请求
-									if (Array.isArray(kickUserId) && kickUserId.length > 0) {
-										const kickPromises = kickUserId.map(async (userId) => {
-											const kickBody = {
-												group_id: groupId,
-												user_id: userId,
-												reject_add_request: rejectAddRequest
-											};
-											console.log(`踢出成员 ${userId}, 参数:`, JSON.stringify(kickBody));
-											return await apiRequest.call(this, 'POST', 'set_group_kick', kickBody);
-										});
-										
-										await Promise.all(kickPromises);
-										body = { success: true, message: `已踢出${kickUserId.length}名成员` };
-										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
-									} else {
-										throw new Error('未选择要踢出的成员');
-									}
-									break;
-
-								case 'set_group_ban':
-									// 禁言群成员：设置群号、成员QQ号和禁言时长
-									body.group_id = groupId;
-									const banUserId = this.getNodeParameter('user_ids', index) as string[];
-									const duration = this.getNodeParameter('duration', index) as number;
-									
-									// 如果有多个成员ID，则创建多个请求
-									if (Array.isArray(banUserId) && banUserId.length > 0) {
-										const banPromises = banUserId.map(async (userId) => {
-											const banBody = {
-												group_id: groupId,
-												user_id: userId,
-												duration: duration
-											};
-											console.log(`禁言成员 ${userId} ${duration}秒, 参数:`, JSON.stringify(banBody));
-											return await apiRequest.call(this, 'POST', 'set_group_ban', banBody);
-										});
-										
-										await Promise.all(banPromises);
-										body = { success: true, message: `已禁言${banUserId.length}名成员` };
-										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
-									} else {
-										throw new Error('未选择要禁言的成员');
-									}
-									break;
-									
-								case 'set_group_whole_ban':
-									// 群组全员禁言：设置群号和是否禁言
-									body.group_id = groupId;
-									body.enable = this.getNodeParameter('enable', index) as boolean;
-									console.log('set_group_whole_ban参数:', JSON.stringify(body));
-									endpoint = 'set_group_whole_ban';
-									break;
-
-								case 'set_group_name':
-									// 设置群名称：设置群号和新群名
-									body.group_id = groupId;
-									body.group_name = this.getNodeParameter('group_name', index) as string;
-									console.log('set_group_name参数:', JSON.stringify(body));
-									endpoint = 'set_group_name';
-									break;
-
-								case 'set_group_admin':
-									// 群组设置管理员
-									body.group_id = groupId;
-									const adminUserId = this.getNodeParameter('user_ids', index) as string[];
-									const enableAdmin = this.getNodeParameter('enable', index) as boolean;
-									
-									// 如果有多个成员ID，则创建多个请求
-									if (Array.isArray(adminUserId) && adminUserId.length > 0) {
-										const adminPromises = adminUserId.map(async (userId) => {
-											const adminBody = {
-												group_id: groupId,
-												user_id: userId,
-												enable: enableAdmin
-											};
-											console.log(`${enableAdmin ? '设置' : '取消'}成员 ${userId} 的管理员权限, 参数:`, JSON.stringify(adminBody));
-											return await apiRequest.call(this, 'POST', 'set_group_admin', adminBody);
-										});
-										
-										await Promise.all(adminPromises);
-										body = { success: true, message: `已${enableAdmin ? '设置' : '取消'}${adminUserId.length}名成员的管理员权限` };
-										endpoint = 'dummy'; // 使用虚拟端点，实际已在上面发送了请求
-									} else {
-										throw new Error('未选择要设置管理员权限的成员');
-									}
-									break;
-							}
-							break;
-
-						}
-					}
-
-					const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
+				const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
 					// 如果是虚拟端点，直接返回本地结果，不再发送请求
 					let data;
 					if (endpoint === 'dummy') {
@@ -1527,25 +1394,25 @@ export class OneBot implements INodeType {
 					} else {
 						data = await apiRequest.call(this, method, endpoint, body);
 					}
-					const json = this.helpers.returnJsonArray(data);
-					const executionData = this.helpers.constructExecutionMetaData(json, {
-						itemData: { item: index },
-					});
+				const json = this.helpers.returnJsonArray(data);
+				const executionData = this.helpers.constructExecutionMetaData(json, {
+					itemData: { item: index },
+				});
 
-					responseData.push(...executionData);
-				} catch (error) {
-					console.error(`执行操作 ${action.operation} 时出错:`, error instanceof Error ? error.message : String(error));
-
-					// 创建错误响应数据
-					const errorMessage = error instanceof Error ? error.message : String(error);
-					const errorItem = {
-						json: {
-							error: errorMessage,
-							success: false
-						}
-					};
-					const executionData = this.helpers.constructExecutionMetaData([errorItem], {
-						itemData: { item: index },
+				responseData.push(...executionData);
+			} catch (error) {
+				console.error(`执行操作 ${action.operation} 时出错:`, error instanceof Error ? error.message : String(error));
+				
+				// 创建错误响应数据
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorItem = {
+					json: { 
+						error: errorMessage,
+						success: false
+					}
+				};
+				const executionData = this.helpers.constructExecutionMetaData([errorItem], {
+					itemData: { item: index },
 					});
 
 					responseData.push(...executionData);
@@ -1566,9 +1433,47 @@ export class OneBot implements INodeType {
 				let body: IDataObject = {};
 				let endpoint: string = '';
 				
-				// 获取机器人信息，用于构建消息
-				const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info');
-				const botInfo = loginInfo?.data || { user_id: '0', nickname: 'Bot' };
+				// 尝试从第一个输入项获取用户ID和昵称
+				let defaultUserId = '';
+				let defaultNickname = '';
+				
+				// 优先使用用户在前端设置的转发消息信息
+				try {
+					const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
+					
+					if (hasForwardSettings) {
+						// 获取第一个转发消息的用户ID和昵称作为默认值
+						const forwardMessages = this.getNodeParameter('forwardMessages', 0) as {
+							messages: Array<{
+								user_id: string;
+								nickname: string;
+							}>;
+						};
+						
+						if (forwardMessages?.messages && forwardMessages.messages.length > 0) {
+							defaultUserId = forwardMessages.messages[0].user_id || '';
+							defaultNickname = forwardMessages.messages[0].nickname || '';
+							console.log(`使用用户提供的默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
+						}
+					}
+				} catch (e) {
+					console.log('获取用户指定的转发消息信息失败，使用默认值');
+				}
+				
+				// 如果前面未获取到有效的默认值，尝试获取机器人信息
+				if (!defaultUserId) {
+					try {
+						const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info');
+						const botInfo = loginInfo?.data || { user_id: '0', nickname: 'Bot' };
+						defaultUserId = botInfo.user_id;
+						defaultNickname = botInfo.nickname;
+						console.log(`使用机器人信息作为默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
+					} catch (error) {
+						console.log('获取机器人信息失败，使用硬编码默认值');
+						defaultUserId = '0'; 
+						defaultNickname = 'Bot';
+					}
+				}
 				
 				// 构建转发消息数组
 				const messages = [];
@@ -1576,83 +1481,10 @@ export class OneBot implements INodeType {
 				for (let index = 0; index < itemsLength; index++) {
 					// 获取当前项的消息内容
 					let messageContent = '';
-					let userId = '';
-					let nickname = '';
 					
 					try {
 						// 尝试获取消息内容
 						messageContent = this.getNodeParameter('message', index, '') as string;
-						
-						// 尝试获取用户ID和昵称，如果失败则使用机器人信息
-						if (operation === 'send_private_msg') {
-							userId = this.getNodeParameter('user_id', index, botInfo.user_id) as string;
-							// 尝试获取用户昵称
-							try {
-								const userInfo = await apiRequest.call(this, 'GET', 'get_stranger_info', undefined, { user_id: userId });
-								nickname = userInfo?.data?.nickname || `用户${userId}`;
-							} catch (e) {
-								nickname = `用户${userId}`;
-							}
-						} else {
-							// 群消息，使用机器人信息
-							userId = botInfo.user_id;
-							nickname = botInfo.nickname;
-						}
-						
-						// 检查是否需要发送图片
-						try {
-							const sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
-							if (sendImage) {
-								console.log(`[群聊消息] 发送图片标志为true，开始处理图片`);
-								// 使用默认值'url'，确保即使获取不到也有默认值
-								const imageSource = this.getNodeParameter('imageSource', index, 'url') as string;
-								console.log(`[群聊消息] 图片来源: ${imageSource}`);
-								let imagePath = '';
-
-								if (imageSource === 'url') {
-									imagePath = this.getNodeParameter('imageUrl', index, '') as string;
-									console.log(`[群聊消息] 图片URL: ${imagePath}`);
-								} else if (imageSource === 'file') {
-									// 本地文件需要添加file://前缀
-									const filePath = this.getNodeParameter('imagePath', index, '') as string;
-									console.log(`[群聊消息] 本地图片路径: ${filePath}`);
-									imagePath = filePath ? 'file://' + filePath : '';
-								} else if (imageSource === 'base64') {
-									// Base64编码需要添加base64://前缀
-									const base64Data = this.getNodeParameter('imageBase64', index, '') as string;
-									console.log(`[群聊消息] Base64图片数据长度: ${base64Data.length}`);
-									imagePath = base64Data ? 'base64://' + base64Data : '';
-								}
-
-								// 只有当图片路径不为空时才添加图片
-								if (imagePath && imagePath.trim() !== '') {
-									console.log(`[群聊消息] 图片路径有效，添加图片CQ码`);
-									// 处理不同情况下的消息格式
-									// 1. 只有图片
-									if (!messageContent.trim()) {
-										messageContent = `[CQ:image,file=${imagePath}]`;
-									}
-									// 2. @全体成员 + 图片
-									else if (messageContent.trim() === '[CQ:at,qq=all] ') {
-										messageContent = `[CQ:at,qq=all] [CQ:image,file=${imagePath}]`;
-									}
-									// 3. @特定成员 + 图片
-									else if (messageContent.includes('[CQ:at,qq=') && !messageContent.includes('[CQ:at,qq=all]')) {
-										// 保持@用户的部分，添加图片
-										messageContent = `${messageContent}[CQ:image,file=${imagePath}]`;
-									}
-									// 4. 普通文本 + 图片
-									else {
-										messageContent = `${messageContent}\n[CQ:image,file=${imagePath}]`;
-									}
-								} else {
-									console.log('[群聊消息] 图片路径为空，跳过添加图片CQ码');
-								}
-							}
-						} catch (error) {
-							console.error(`处理第${index+1}项的图片时出错:`, error instanceof Error ? error.message : String(error));
-							// 如果出错，继续处理文本消息，不添加图片
-						}
 						
 						// 检查是否有@全体成员或@特定成员（针对群消息）
 						if (operation === 'send_group_msg') {
@@ -1684,16 +1516,14 @@ export class OneBot implements INodeType {
 						} catch (jsonError) {
 							messageContent = '无法获取消息内容';
 						}
-						userId = botInfo.user_id;
-						nickname = botInfo.nickname;
 					}
 					
-					// 构建消息对象 - 使用标准格式
+					// 构建消息对象 - 使用标准格式和默认的user_id
 					const messageObj = {
 						type: 'node',
 						data: {
-							user_id: userId,
-							nickname: nickname,
+							user_id: defaultUserId,
+							nickname: defaultNickname,
 							content: messageContent
 						}
 					};
@@ -1734,14 +1564,13 @@ export class OneBot implements INodeType {
 					const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
 					
 					if (hasForwardSettings) {
-						// 获取转发消息设置
+						// 转发消息设置
 						const forwardSettings = this.getNodeParameter('forwardSettings', 0, {}) as {
 							summary?: string;
 							source?: string;
 							prompt?: string;
 						};
 						
-						// 使用用户设置的值
 						if (forwardSettings.summary) body.summary = forwardSettings.summary;
 						if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
 						if (forwardSettings.source) body.source = forwardSettings.source;
@@ -1765,14 +1594,13 @@ export class OneBot implements INodeType {
 							body.news = [{ text: "不许点进来！" }];
 						}
 					} else {
-						// 使用默认值，但更个性化
 						body.summary = '哼哼';
 						body.prompt = '宝宝，我爱你';
 						body.source = '坏蛋！';
 						body.news = [{ text: "不许点进来！" }];
 					}
 				} catch (e) {
-					// 如果获取失败，使用默认个性化值
+					// 使用默认个性化值
 					body.summary = '哼哼';
 					body.prompt = '宝宝，我爱你';
 					body.source = '坏蛋！';
