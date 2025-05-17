@@ -18,9 +18,31 @@ function isNetworkError(error: unknown): boolean {
 		errorMessage.includes('ENETUNREACH') ||
 		errorMessage.includes('ECONNREFUSED') ||
 		errorMessage.includes('The connection to the server was closed unexpectedly') ||
+		errorMessage.includes('was aborted') ||  // 添加连接中断检测
+		errorMessage.includes('timed out') ||    // 添加超时检测
 		errorMessage.includes('getaddrinfo') ||
 		errorMessage.includes('socket hang up') ||
 		errorMessage.includes('network timeout')
+	);
+}
+
+// 检测是否是超时错误
+function isTimeoutError(error: unknown): boolean {
+	const errorMessage = error instanceof Error ? error.message : String(error);
+	return (
+		errorMessage.includes('ETIMEDOUT') ||
+		errorMessage.includes('timed out') ||
+		errorMessage.includes('timeout')
+	);
+}
+
+// 检测是否是连接中断错误
+function isConnectionAbortedError(error: unknown): boolean {
+	const errorMessage = error instanceof Error ? error.message : String(error);
+	return (
+		errorMessage.includes('aborted') ||
+		errorMessage.includes('connection') ||
+		errorMessage.includes('socket')
 	);
 }
 
@@ -85,6 +107,12 @@ export async function apiRequest(
 		console.log('处理后的查询参数:', JSON.stringify(processedQuery));
 	}
 
+	// 对于发送消息类的操作，增加超时时间
+	let timeoutValue = 30000; // 默认30秒
+	if (endpoint.includes('send_') && endpoint.includes('_msg')) {
+		timeoutValue = 60000; // 发送消息操作增加到60秒
+	}
+
 	// 构建HTTP请求选项
 	const options: IHttpRequestOptions = {
 		url: endpoint,
@@ -96,7 +124,7 @@ export async function apiRequest(
 		body,
 		qs: processedQuery, // 使用处理后的查询参数
 		json: true,
-		timeout: 10000, // 增加超时时间到10秒
+		timeout: timeoutValue, // 使用动态超时时间
 	};
 
 	let retries = 0;
@@ -106,7 +134,7 @@ export async function apiRequest(
 	while (retries <= maxRetries) {
 		try {
 			console.log(`${retries > 0 ? `[重试 ${retries}/${maxRetries}] ` : ''}发送${method}请求到 ${baseURL}${endpoint}`,
-				body ? `请求体: ${JSON.stringify(body)}` : '',
+				body ? `请求体: ${JSON.stringify(body).substring(0, 500)}${JSON.stringify(body).length > 500 ? '...(省略)' : ''}` : '',
 				processedQuery && Object.keys(processedQuery).length > 0 ? `查询参数: ${JSON.stringify(processedQuery)}` : ''
 			);
 
@@ -124,15 +152,49 @@ export async function apiRequest(
 			return response;
 		} catch (error) {
 			lastError = error;
+			const errorMsg = error instanceof Error ? error.message : String(error);
+
+			// 特殊处理超时和连接中断的情况
+			if (isTimeoutError(error)) {
+				console.log(`请求超时: ${errorMsg}，请求可能已被服务器处理但未返回响应`);
+
+				// 对于发送消息类操作，特殊处理超时，视为可能成功
+				if (endpoint.includes('send_') && method === 'POST') {
+					console.log('这是发送消息操作，超时可能表示消息已发送但未收到响应');
+
+					// 返回一个模拟的成功响应
+					return {
+						status: 'ok',
+						retcode: 0,
+						data: null,
+						message: '请求超时，但消息可能已发送成功',
+						_timeout_warning: true  // 添加标记表示这是超时情况
+					};
+				}
+			}
+
+			if (isConnectionAbortedError(error) && endpoint.includes('send_') && method === 'POST') {
+				console.log(`连接中断: ${errorMsg}，但由于是发送消息操作，消息可能已被处理`);
+
+				// 返回一个模拟的成功响应
+				return {
+					status: 'ok',
+					retcode: 0,
+					data: null,
+					message: '连接中断，但消息可能已发送成功',
+					_connection_aborted_warning: true  // 添加标记表示这是连接中断情况
+				};
+			}
+
 			if (isNetworkError(error) && retries < maxRetries) {
 				// 网络错误，进行重试
 				retries++;
 				const waitTime = retries * 1000; // 递增的等待时间
-				console.log(`遇到网络错误: ${error instanceof Error ? error.message : String(error)}, 将在${waitTime}毫秒后重试 (${retries}/${maxRetries})`);
+				console.log(`遇到网络错误: ${errorMsg}, 将在${waitTime}毫秒后重试 (${retries}/${maxRetries})`);
 				await sleep(waitTime);
 			} else {
 				// 非网络错误或已达到最大重试次数，抛出异常
-				console.error('API请求失败:', error instanceof Error ? error.message : String(error));
+				console.error('API请求失败:', errorMsg);
 				throw error;
 			}
 		}
@@ -141,4 +203,3 @@ export async function apiRequest(
 	// 如果代码执行到这里（理论上不应该），则所有重试都失败了
 	throw lastError;
 }
-
