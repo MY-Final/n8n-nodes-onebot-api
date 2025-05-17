@@ -49,6 +49,12 @@ function isConnectionAbortedError(error: unknown): boolean {
 // 等待指定毫秒数
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 新增辅助函数，用于简化Base64字符串在日志中的显示
+function simplifyBase64ForLog(jsonStr: string): string {
+	// 查找并替换Base64字符串模式(base64://后跟大量字符)
+	return jsonStr.replace(/(base64:\/\/[A-Za-z0-9+\/=]{20})[A-Za-z0-9+\/=]+/g, '$1...[BASE64数据]');
+}
+
 /**
  * 发送API请求到OneBot服务器
  *
@@ -57,7 +63,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  * @param endpoint - API端点路径
  * @param body - 请求体数据(可选)
  * @param query - URL查询参数(可选)
- * @param maxRetries - 最大重试次数(默认3次)
+ * @param maxRetries - 最大重试次数(默认1次)
  * @returns 请求响应数据
  */
 export async function apiRequest(
@@ -66,7 +72,7 @@ export async function apiRequest(
 	endpoint: string,
 	body?: IHttpRequestOptions['body'],
 	query?: IHttpRequestOptions['qs'],
-	maxRetries: number = 3,
+	maxRetries: number = 1,
 ) {
 	// 获取OneBot API凭证
 	const credentials = (await this.getCredentials('oneBotApi')) as OneBotCredentials;
@@ -133,15 +139,28 @@ export async function apiRequest(
 	// 重试循环
 	while (retries <= maxRetries) {
 		try {
+			// 准备日志输出
+			let bodyLog = '';
+			if (body) {
+				// 将body转为字符串并简化Base64内容
+				const bodyStr = JSON.stringify(body);
+				const simplifiedBody = simplifyBase64ForLog(bodyStr);
+				// 截断长度，但保留更多内容
+				bodyLog = `请求体: ${simplifiedBody.length > 1000 ? simplifiedBody.substring(0, 1000) + '...(省略)' : simplifiedBody}`;
+			}
+			
 			console.log(`${retries > 0 ? `[重试 ${retries}/${maxRetries}] ` : ''}发送${method}请求到 ${baseURL}${endpoint}`,
-				body ? `请求体: ${JSON.stringify(body).substring(0, 500)}${JSON.stringify(body).length > 500 ? '...(省略)' : ''}` : '',
+				bodyLog,
 				processedQuery && Object.keys(processedQuery).length > 0 ? `查询参数: ${JSON.stringify(processedQuery)}` : ''
 			);
 
 			// 发送带身份验证的HTTP请求
 			const response = await this.helpers.httpRequestWithAuthentication.call(this, 'oneBotApi', options);
 			console.log(`API响应状态: ${response.status || '未知'}`);
-			console.log(`API响应内容: ${JSON.stringify(response).substring(0, 500)}${JSON.stringify(response).length > 500 ? '...(省略)' : ''}`);
+			// 简化响应日志
+			const responseStr = JSON.stringify(response);
+			const simplifiedResponse = simplifyBase64ForLog(responseStr);
+			console.log(`API响应内容: ${simplifiedResponse.length > 500 ? simplifiedResponse.substring(0, 500) + '...(省略)' : simplifiedResponse}`);
 
 			// 检查响应是否成功
 			if (response.status === 'failed') {
@@ -154,38 +173,13 @@ export async function apiRequest(
 			lastError = error;
 			const errorMsg = error instanceof Error ? error.message : String(error);
 
-			// 特殊处理超时和连接中断的情况
+			// 记录错误信息但不再将超时和连接中断视为成功
 			if (isTimeoutError(error)) {
-				console.log(`请求超时: ${errorMsg}，请求可能已被服务器处理但未返回响应`);
-
-				// 对于发送消息类操作，特殊处理超时，视为可能成功
-				if (endpoint.includes('send_') && method === 'POST') {
-					console.log('这是发送消息操作，超时可能表示消息已发送但未收到响应');
-
-					// 返回一个模拟的成功响应
-					return {
-						status: 'ok',
-						retcode: 0,
-						data: null,
-						message: '请求超时，但消息可能已发送成功',
-						_timeout_warning: true  // 添加标记表示这是超时情况
-					};
-				}
+				console.log(`请求超时: ${errorMsg}`);
+			} else if (isConnectionAbortedError(error)) {
+				console.log(`连接中断: ${errorMsg}`);
 			}
-
-			if (isConnectionAbortedError(error) && endpoint.includes('send_') && method === 'POST') {
-				console.log(`连接中断: ${errorMsg}，但由于是发送消息操作，消息可能已被处理`);
-
-				// 返回一个模拟的成功响应
-				return {
-					status: 'ok',
-					retcode: 0,
-					data: null,
-					message: '连接中断，但消息可能已发送成功',
-					_connection_aborted_warning: true  // 添加标记表示这是连接中断情况
-				};
-			}
-
+			
 			if (isNetworkError(error) && retries < maxRetries) {
 				// 网络错误，进行重试
 				retries++;
@@ -203,3 +197,4 @@ export async function apiRequest(
 	// 如果代码执行到这里（理论上不应该），则所有重试都失败了
 	throw lastError;
 }
+

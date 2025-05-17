@@ -65,6 +65,56 @@ function processBase64Image(base64Data: string): string {
 }
 
 /**
+ * 检测并处理消息中可能包含的Base64数据
+ * 支持直接在消息框中粘贴Base64数据，自动转换为图片CQ码
+ * @param message 原始消息文本
+ * @param autoDetect 是否启用自动检测
+ * @returns 处理后的消息文本
+ */
+function detectAndProcessBase64InMessage(message: string, autoDetect: boolean = false): string {
+    if (!message || message.trim() === '' || !autoDetect) {
+        return message;
+    }
+
+    // 如果消息已经包含CQ码，不做处理
+    if (message.includes('[CQ:')) {
+        return message;
+    }
+
+    try {
+        // 检测消息是否可能完全是一段Base64编码图片数据
+        // 只有当整个消息都是Base64数据时才转换，不处理混合内容
+        const trimmedMessage = message.trim();
+        
+        // 严格判断条件 - 整个消息必须符合：
+        // 1. 长度至少为100个字符
+        // 2. 只包含合法Base64字符
+        // 3. 不包含大量空格、换行等明显的文本格式
+        // 4. 不是明显的普通文本（如包含中文、明显的单词、URL等）
+        if (trimmedMessage.length >= 100 && 
+            /^[A-Za-z0-9+/=]+$/.test(trimmedMessage) && 
+            !/\s{2,}/.test(trimmedMessage) &&
+            !/[\u4e00-\u9fa5]|^(http|www|\w+\s\w+)/.test(trimmedMessage)) {
+            
+            try {
+                console.log('检测到可能的Base64图片数据，尝试转换为CQ码');
+                const processedBase64 = processBase64Image(trimmedMessage);
+                if (processedBase64) {
+                    return `[CQ:image,file=${processedBase64}]`;
+                }
+            } catch (error) {
+                console.log('Base64转换失败，保留原始文本', error);
+            }
+        }
+        
+        return message;
+    } catch (error) {
+        console.log('Base64检测处理出错，保留原始消息:', error);
+        return message;
+    }
+}
+
+/**
  * 处理私聊消息
  */
 async function handlePrivateMessage(
@@ -185,6 +235,14 @@ async function handlePrivateMessage(
         // 获取消息内容
         let privateMessageContent = this.getNodeParameter('message', index) as string;
 
+        // 获取"自动检测Base64数据"选项，默认为false（不启用自动检测）
+        // 注意：由于我们无法动态添加UI选项，这里暂时默认为false，防止误判
+        // 将来可以添加到UI选项中
+        const autoDetectBase64 = false; // 默认不启用自动检测
+
+        // 检查消息中是否包含Base64数据并自动处理
+        privateMessageContent = detectAndProcessBase64InMessage(privateMessageContent, autoDetectBase64);
+
         // 检查是否需要发送图片
         const privateSendImage = this.getNodeParameter('sendImage', index, false) as boolean;
         if (privateSendImage) {
@@ -242,10 +300,12 @@ async function handlePrivateMessage(
         const data = await apiRequest.call(this, 'POST', endpoint, body);
         return { json: data };
     } catch (error) {
-        // 添加更友好的错误提示
+        // 更新错误提示，明确指出请求失败
         const errorMsg = error instanceof Error ? error.message : String(error);
         if (errorMsg.includes('aborted') || errorMsg.includes('connection')) {
-            throw new Error(`发送消息失败: 服务器连接中断。可能是图片太大或格式有问题，请尝试使用更小的图片或检查网络连接。`);
+            throw new Error(`发送私聊消息失败: 服务器连接中断。请求未成功完成，消息未发送。可能原因：图片太大或格式有问题，请尝试使用更小的图片或检查网络连接。`);
+        } else if (errorMsg.includes('timeout') || errorMsg.includes('timed out')) {
+            throw new Error(`发送私聊消息失败: 请求超时。请求未成功完成，消息未发送。请检查网络连接和服务器状态后重试。`);
         }
         throw error;
     }
@@ -376,6 +436,12 @@ async function handleGroupMessage(
         // 获取消息内容
         let messageContent = this.getNodeParameter('message', index) as string;
 
+        // 获取"自动检测Base64数据"选项，默认为false（不启用自动检测）
+        const autoDetectBase64 = false; // 默认不启用自动检测
+
+        // 检查消息中是否包含Base64数据并自动处理
+        messageContent = detectAndProcessBase64InMessage(messageContent, autoDetectBase64);
+
         // 检查是否需要@全体成员
         const atAll = this.getNodeParameter('atAll', index, false) as boolean;
         if (atAll) {
@@ -460,225 +526,13 @@ async function handleGroupMessage(
         const data = await apiRequest.call(this, 'POST', endpoint, body);
         return { json: data };
     } catch (error) {
-        // 添加更友好的错误提示
+        // 更新错误提示，明确指出请求失败
         const errorMsg = error instanceof Error ? error.message : String(error);
         if (errorMsg.includes('aborted') || errorMsg.includes('connection')) {
-            throw new Error(`发送群消息失败: 服务器连接中断。可能是图片太大或格式有问题，请尝试使用更小的图片或检查网络连接。`);
+            throw new Error(`发送群消息失败: 服务器连接中断。请求未成功完成，消息未发送。可能原因：图片太大或格式有问题，请尝试使用更小的图片或检查网络连接。`);
+        } else if (errorMsg.includes('timeout') || errorMsg.includes('timed out')) {
+            throw new Error(`发送群消息失败: 请求超时。请求未成功完成，消息未发送。请检查网络连接和服务器状态后重试。`);
         }
-        throw error;
-    }
-}
-
-/**
- * 处理多输入项转发消息
- */
-export async function handleMultipleInputsForward(
-    this: IExecuteFunctions,
-    itemsLength: number
-): Promise<INodeExecutionData> {
-    try {
-        // 获取第一个输入项的操作类型
-        const operation = this.getNodeParameter('operation', 0) as string;
-        
-        // 只支持发送消息操作的转发
-        if (!['send_private_msg', 'send_group_msg'].includes(operation)) {
-            throw new Error('多输入项转发消息仅支持发送私聊消息和群消息操作');
-        }
-        
-        // 准备转发消息参数
-        let body: IDataObject = {};
-        let endpoint: string = '';
-        
-        // 尝试从第一个输入项获取用户ID和昵称
-        let defaultUserId = '';
-        let defaultNickname = '';
-        
-        // 优先使用用户在前端设置的转发消息信息
-        try {
-            const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
-            
-            if (hasForwardSettings) {
-                // 获取第一个转发消息的用户ID和昵称作为默认值
-                const forwardMessages = this.getNodeParameter('forwardMessages', 0) as {
-                    messages: Array<{
-                        user_id: string;
-                        nickname: string;
-                    }>;
-                };
-                
-                if (forwardMessages?.messages && forwardMessages.messages.length > 0) {
-                    defaultUserId = forwardMessages.messages[0].user_id || '';
-                    defaultNickname = forwardMessages.messages[0].nickname || '';
-                    console.log(`使用用户提供的默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
-                }
-            }
-        } catch (e) {
-            console.log('获取用户指定的转发消息信息失败，使用默认值');
-        }
-        
-        // 如果前面未获取到有效的默认值，尝试获取机器人信息
-        if (!defaultUserId) {
-            try {
-                const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info');
-                const botInfo = loginInfo?.data || { user_id: '0', nickname: 'Bot' };
-                defaultUserId = botInfo.user_id;
-                defaultNickname = botInfo.nickname;
-                console.log(`使用机器人信息作为默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
-            } catch (error) {
-                console.log('获取机器人信息失败，使用硬编码默认值');
-                defaultUserId = '0'; 
-                defaultNickname = 'Bot';
-            }
-        }
-        
-        // 构建转发消息数组
-        const messages = [];
-        
-        for (let index = 0; index < itemsLength; index++) {
-            // 获取当前项的消息内容
-            let messageContent = '';
-            
-            try {
-                // 尝试获取消息内容
-                messageContent = this.getNodeParameter('message', index, '') as string;
-                
-                // 检查是否有@全体成员或@特定成员（针对群消息）
-                if (operation === 'send_group_msg') {
-                    try {
-                        // 检查是否需要@全体成员
-                        const atAll = this.getNodeParameter('atAll', index, false) as boolean;
-                        if (atAll) {
-                            // 在消息前添加@全体成员CQ码
-                            messageContent = '[CQ:at,qq=all] ' + messageContent;
-                        }
-
-                        // 检查是否需要@特定成员
-                        const atUser = this.getNodeParameter('atUser', index, false) as boolean;
-                        if (atUser) {
-                            const atUserId = this.getNodeParameter('atUserId', index, '') as string;
-                            if (atUserId) {
-                                messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
-                            }
-                        }
-                    } catch (error) {
-                        console.error(`处理第${index+1}项的@功能时出错:`, error instanceof Error ? error.message : String(error));
-                        // 如果出错，继续处理文本消息，不添加@
-                    }
-                }
-            } catch (e) {
-                // 如果获取失败，尝试使用JSON数据作为消息内容
-                try {
-                    messageContent = JSON.stringify(this.getInputData()[index].json);
-                } catch (jsonError) {
-                    messageContent = '无法获取消息内容';
-                }
-            }
-            
-            // 构建消息对象 - 使用标准格式和默认的user_id
-            const messageObj = {
-                type: 'node',
-                data: {
-                    user_id: defaultUserId,
-                    nickname: defaultNickname,
-                    content: messageContent
-                }
-            };
-            
-            messages.push(messageObj);
-        }
-        
-        // 构建转发消息体
-        if (operation === 'send_private_msg') {
-            try {
-                const privateUserId = this.getNodeParameter('user_id', 0) as string;
-                body = {
-                    user_id: privateUserId,
-                    messages,
-                };
-                endpoint = 'send_private_forward_msg';
-            } catch (error) {
-                console.error('获取私聊用户ID时出错:', error instanceof Error ? error.message : String(error));
-                throw new Error('获取私聊用户ID失败，无法发送转发消息');
-            }
-        } else {
-            try {
-                const groupId = this.getNodeParameter('group_id', 0) as string;
-                body = {
-                    group_id: groupId,
-                    messages,
-                };
-                endpoint = 'send_group_forward_msg';
-            } catch (error) {
-                console.error('获取群ID时出错:', error instanceof Error ? error.message : String(error));
-                throw new Error('获取群ID失败，无法发送转发消息');
-            }
-        }
-        
-        // 尝试从第一个输入项获取转发消息设置
-        try {
-            // 检查第一个输入项是否有转发消息设置
-            const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
-            
-            if (hasForwardSettings) {
-                // 转发消息设置
-                const forwardSettings = this.getNodeParameter('forwardSettings', 0, {}) as {
-                    summary?: string;
-                    source?: string;
-                    prompt?: string;
-                };
-                
-                if (forwardSettings.summary) body.summary = forwardSettings.summary;
-                if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
-                if (forwardSettings.source) body.source = forwardSettings.source;
-                
-                // 获取文本内容
-                try {
-                    const newsMessages = this.getNodeParameter('newsMessages', 0, { news: [] }) as {
-                        news: Array<{
-                            text: string;
-                        }>;
-                    };
-                    
-                    if (newsMessages.news && newsMessages.news.length > 0) {
-                        body.news = newsMessages.news.map(item => ({ text: item.text }));
-                    } else {
-                        // 如果没有设置文本内容，使用默认的
-                        body.news = [{ text: "不许点进来！" }];
-                    }
-                } catch (e) {
-                    // 如果获取失败，使用默认值
-                    body.news = [{ text: "不许点进来！" }];
-                }
-            } else {
-                body.summary = '哼哼';
-                body.prompt = '宝宝，我爱你';
-                body.source = '坏蛋！';
-                body.news = [{ text: "不许点进来！" }];
-            }
-        } catch (e) {
-            // 使用默认个性化值
-            body.summary = '哼哼';
-            body.prompt = '宝宝，我爱你';
-            body.source = '坏蛋！';
-            body.news = [{ text: "不许点进来！" }];
-        }
-        
-        console.log(`自动转发消息参数:`, JSON.stringify(body));
-        
-        // 发送请求
-        try {
-            const data = await apiRequest.call(this, 'POST', endpoint, body);
-            return { json: data };
-        } catch (error) {
-            // 添加更友好的错误提示
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            if (errorMsg.includes('aborted') || errorMsg.includes('connection')) {
-                throw new Error(`发送转发消息失败: 服务器连接中断。可能是内容太大或格式有问题，请检查网络连接或减少转发的消息数量。`);
-            }
-            throw error;
-        }
-    } catch (error) {
-        console.error(`执行多输入项转发消息时出错:`, error instanceof Error ? error.message : String(error));
         throw error;
     }
 } 

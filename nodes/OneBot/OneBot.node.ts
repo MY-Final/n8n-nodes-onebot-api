@@ -14,7 +14,8 @@ import { executeBotOperation } from './BotActions';
 import { executeFriendOperation } from './FriendActions';
 import { executeGroupOperation } from './GroupActions';
 import { executeMiscOperation } from './MiscActions';
-import { executeMessageOperation, handleMultipleInputsForward } from './MessageActions';
+import { executeMessageOperation } from './MessageActions';
+import { handleMultipleInputsForward } from './ForwardActions';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -391,6 +392,100 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
+				displayName: '转发模式',
+				name: 'forward_mode',
+				type: 'boolean',
+				default: false,
+				description: '是否使用转发消息格式发送多条消息',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: '转发消息设置',
+				name: 'forwardSettings',
+				type: 'collection',
+				default: {
+					summary: '聊天记录',
+					source: '来自好友的消息',
+					prompt: '查看完整聊天记录'
+				},
+				placeholder: '配置转发消息的基本信息',
+				options: [
+					{
+						displayName: '消息摘要',
+						name: 'summary',
+						type: 'string',
+						default: '聊天记录',
+						description: '显示在转发消息卡片顶部的标题文字',
+					},
+					{
+						displayName: '消息来源',
+						name: 'source',
+						type: 'string',
+						default: '来自好友的消息',
+						description: '显示在转发消息卡片右上角的来源文字',
+					},
+					{
+						displayName: '提示文字',
+						name: 'prompt',
+						type: 'string',
+						default: '查看完整聊天记录',
+						description: '显示在转发消息卡片底部的提示文字',
+					},
+				],
+				description: '配置转发消息的显示效果',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+						forward_mode: [true],
+					},
+				},
+			},
+			{
+				displayName: '文本内容',
+				name: 'newsMessages',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: true,
+				},
+				default: {
+					news: [
+						{
+							text: '查看详细内容'
+						}
+					]
+				},
+				placeholder: '添加文本内容',
+				options: [
+					{
+						name: 'news',
+						displayName: '文本项',
+						values: [
+							{
+								displayName: '文本',
+								name: 'text',
+								type: 'string',
+								default: '查看详细内容',
+								description: '文本内容',
+							},
+						],
+					},
+				],
+				description: '添加文本内容（注意：某些客户端可能无法正确显示此内容）',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+						forward_mode: [true],
+					},
+				},
+			},
+			{
 				displayName: '@全体成员',
 				name: 'atAll',
 				type: 'boolean',
@@ -400,6 +495,7 @@ export class OneBot implements INodeType {
 					show: {
 						resource: ['message'],
 						operation: ['send_group_msg'],
+						forward_mode: [false],
 					},
 				},
 			},
@@ -413,6 +509,7 @@ export class OneBot implements INodeType {
 					show: {
 						resource: ['message'],
 						operation: ['send_group_msg'],
+						forward_mode: [false],
 					},
 				},
 			},
@@ -432,6 +529,7 @@ export class OneBot implements INodeType {
 						resource: ['message'],
 						operation: ['send_group_msg'],
 						atUser: [true],
+						forward_mode: [false],
 					},
 				},
 			},
@@ -529,209 +627,6 @@ export class OneBot implements INodeType {
 						resource: ['message'],
 						operation: ['send_private_msg', 'send_group_msg'],
 						forward_mode: [false],
-					},
-				},
-			},
-			{
-				displayName: 'Forward Mode',
-				name: 'forward_mode',
-				type: 'boolean',
-				noDataExpression: true,
-				default: false,
-				description: '开启后将以转发消息形式发送，支持多条消息',
-				displayOptions: {
-					show: {
-						resource: ['message'],
-						operation: ['send_private_msg', 'send_group_msg'],
-					},
-				},
-			},
-			{
-				displayName: '转发消息设置',
-				name: 'forwardSettings',
-				type: 'collection',
-				default: {},
-				placeholder: '配置转发消息的基本信息',
-				options: [
-					{
-						displayName: '消息摘要',
-						name: 'summary',
-						type: 'string',
-						default: '哼哼',
-						description: '显示在转发消息卡片顶部的标题文字',
-					},
-					{
-						displayName: '消息来源',
-						name: 'source',
-						type: 'string',
-						default: '坏蛋！',
-						description: '显示在转发消息卡片右上角的来源文字',
-					},
-					{
-						displayName: '提示文字',
-						name: 'prompt',
-						type: 'string',
-						default: '宝宝，我爱你',
-						description: '显示在转发消息卡片底部的提示文字',
-					},
-				],
-				description: '配置转发消息的显示效果',
-				displayOptions: {
-					show: {
-						resource: ['message'],
-						operation: ['send_private_msg', 'send_group_msg'],
-						forward_mode: [true],
-					},
-				},
-			},
-			{
-				displayName: '转发消息列表',
-				name: 'forwardMessages',
-				type: 'fixedCollection',
-				typeOptions: {
-					multipleValues: true,
-				},
-				default: {},
-				placeholder: '添加转发消息',
-				options: [
-					{
-						name: 'messages',
-						displayName: '消息项',
-						values: [
-							{
-								displayName: '发送者QQ',
-								name: 'user_id',
-								type: 'string',
-								default: '',
-								description: '消息发送者的QQ号',
-							},
-							{
-								displayName: '发送者昵称',
-								name: 'nickname',
-								type: 'string',
-								default: '',
-								description: '消息发送者的昵称',
-							},
-							{
-								displayName: '添加图片',
-								name: 'addImage',
-								type: 'boolean',
-								default: false,
-								description: '是否添加图片',
-							},
-							{
-								displayName: '图片来源',
-								name: 'imageSource',
-								type: 'options',
-								options: [
-									{
-										name: '网络图片',
-										value: 'url',
-									},
-									{
-										name: '本地图片',
-										value: 'file',
-									},
-									{
-										name: 'Base64编码',
-										value: 'base64',
-									},
-								],
-								default: 'url',
-								description: '图片的来源类型',
-								displayOptions: {
-									show: {
-										addImage: [true],
-									},
-								},
-							},
-							{
-								displayName: '图片URL',
-								name: 'imageUrl',
-								type: 'string',
-								default: '',
-								placeholder: 'http://example.com/image.jpg',
-								description: '网络图片的URL地址',
-								displayOptions: {
-									show: {
-										addImage: [true],
-										imageSource: ['url'],
-									},
-								},
-							},
-							{
-								displayName: '本地图片路径',
-								name: 'imagePath',
-								type: 'string',
-								default: '',
-								placeholder: 'D:/images/example.jpg',
-								description: '本地图片的完整路径',
-								displayOptions: {
-									show: {
-										addImage: [true],
-										imageSource: ['file'],
-									},
-								},
-							},
-							{
-								displayName: 'Base64编码图片',
-								name: 'imageBase64',
-								type: 'string',
-								typeOptions: {
-									rows: 4,
-								},
-								default: '',
-								placeholder: '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/...',
-								description: '图片的Base64编码（不需要包含前缀如"data:image/jpeg;base64,"）',
-								displayOptions: {
-									show: {
-										addImage: [true],
-										imageSource: ['base64'],
-									},
-								},
-							},
-						],
-					},
-				],
-				description: '转发消息列表，可添加多条消息',
-				displayOptions: {
-					show: {
-						resource: ['message'],
-						operation: ['send_private_msg', 'send_group_msg'],
-						forward_mode: [true],
-					},
-				},
-			},
-			{
-				displayName: '文本内容',
-				name: 'newsMessages',
-				type: 'fixedCollection',
-				typeOptions: {
-					multipleValues: true,
-				},
-				default: {},
-				placeholder: '添加文本内容',
-				options: [
-					{
-						name: 'news',
-						displayName: '文本项',
-						values: [
-							{
-								displayName: '文本内容',
-								name: 'text',
-								type: 'string',
-								default: '不许点进来！',
-								description: '转发消息中显示的文本内容',
-							},
-						],
-					},
-				],
-				description: '转发消息的文本内容，用于卡片预览',
-				displayOptions: {
-					show: {
-						resource: ['message'],
-						operation: ['send_private_msg', 'send_group_msg'],
-						forward_mode: [true],
 					},
 				},
 			},
@@ -973,7 +868,7 @@ export class OneBot implements INodeType {
 		// 如果只有一个输入项，正常处理
 		if (!autoForwardMode) {
 			// 处理单个输入项
-			for (let index = 0; index < itemsLength; index++) {
+		for (let index = 0; index < itemsLength; index++) {
 				try {
 					// 获取操作类型及资源类型
 					const operation = this.getNodeParameter('operation', index) as string;
@@ -1012,26 +907,26 @@ export class OneBot implements INodeType {
 					} else if (resource === 'message') {
 						const messageActionResponse = await executeMessageOperation.call(this, index);
 						const json = this.helpers.returnJsonArray(messageActionResponse);
-						const executionData = this.helpers.constructExecutionMetaData(json, {
-							itemData: { item: index },
-						});
-						responseData.push(...executionData);
+				const executionData = this.helpers.constructExecutionMetaData(json, {
+					itemData: { item: index },
+				});
+				responseData.push(...executionData);
 					} else {
 						throw new Error(`未知的资源类型: ${resource}`);
 					}
-				} catch (error) {
+			} catch (error) {
 					console.error(`执行操作时出错:`, error instanceof Error ? error.message : String(error));
-					
-					// 创建错误响应数据
-					const errorMessage = error instanceof Error ? error.message : String(error);
-					const errorItem = {
-						json: { 
-							error: errorMessage,
-							success: false
-						}
-					};
-					const executionData = this.helpers.constructExecutionMetaData([errorItem], {
-						itemData: { item: index },
+				
+				// 创建错误响应数据
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorItem = {
+					json: { 
+						error: errorMessage,
+						success: false
+					}
+				};
+				const executionData = this.helpers.constructExecutionMetaData([errorItem], {
+					itemData: { item: index },
 					});
 
 					responseData.push(...executionData);
@@ -1070,3 +965,4 @@ export class OneBot implements INodeType {
 		return [responseData];
 	}
 }
+
