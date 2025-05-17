@@ -1,7 +1,5 @@
 import {
-	IDataObject,
 	IExecuteFunctions,
-	IHttpRequestMethods,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
@@ -16,6 +14,7 @@ import { executeBotOperation } from './BotActions';
 import { executeFriendOperation } from './FriendActions';
 import { executeGroupOperation } from './GroupActions';
 import { executeMiscOperation } from './MiscActions';
+import { executeMessageOperation, handleMultipleInputsForward } from './MessageActions';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -960,8 +959,6 @@ export class OneBot implements INodeType {
 		},
 	};
 
-	// checkBotGroupPermission方法已移至GroupActions.ts
-
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		// 用于保存所有响应
 		const responseData: any[] = [];
@@ -976,443 +973,65 @@ export class OneBot implements INodeType {
 		// 如果只有一个输入项，正常处理
 		if (!autoForwardMode) {
 			// 处理单个输入项
-		for (let index = 0; index < itemsLength; index++) {
-			// 初始化变量
-			let action: IDataObject = { operation: 'unknown' };
-			let body: IDataObject = {};
-			let endpoint: string = '';
-			
-			try {
-				// 获取操作类型及资源类型
-				action.operation = this.getNodeParameter('operation', index) as string;
-				const resource = this.getNodeParameter('resource', index) as string;
-				console.log(`正在执行操作: ${action.operation}, 资源类型: ${resource}`);
-				
-				// 根据资源类型使用对应的模块处理
-				if (resource === 'bot') {
-					const botActionResponse = await executeBotOperation.call(this, index);
-					const json = this.helpers.returnJsonArray(botActionResponse);
-					const executionData = this.helpers.constructExecutionMetaData(json, {
-						itemData: { item: index },
-					});
-					responseData.push(...executionData);
-					continue; // 跳过下面的处理
-				} else if (resource === 'friend') {
-					const friendActionResponse = await executeFriendOperation.call(this, index);
-					const json = this.helpers.returnJsonArray(friendActionResponse);
-					const executionData = this.helpers.constructExecutionMetaData(json, {
-						itemData: { item: index },
-					});
-					responseData.push(...executionData);
-					continue; // 跳过下面的处理
-				} else if (resource === 'group') {
-					const groupActionResponse = await executeGroupOperation.call(this, index);
-					const json = this.helpers.returnJsonArray(groupActionResponse);
-					const executionData = this.helpers.constructExecutionMetaData(json, {
-						itemData: { item: index },
-					});
-					responseData.push(...executionData);
-					continue; // 跳过下面的处理
-				} else if (resource === 'misc') {
-					const miscActionResponse = await executeMiscOperation.call(this, index);
-					const json = this.helpers.returnJsonArray(miscActionResponse);
-					const executionData = this.helpers.constructExecutionMetaData(json, {
-						itemData: { item: index },
-					});
-					responseData.push(...executionData);
-					continue; // 跳过下面的处理
-				}
-
-				// 获取并处理群组ID
-				let groupId: string | number | undefined;
-					if (['send_group_msg', 'get_group_info', 'get_group_member_list', 'get_group_member_info', 'set_group_kick', 'set_group_ban', 'set_group_whole_ban', 'set_group_name', 'set_group_admin', 'group_poke', 'set_group_sign'].includes(action.operation as string)) {
-					groupId = this.getNodeParameter('group_id', index) as string | number;
-					console.log('获取到group_id:', groupId, '类型:', typeof groupId);
-				}
-
-				// 根据操作类型设置body和endpoint
-				switch (action.operation) {
-					case 'send_private_msg':
-						// 发送私聊消息：设置用户ID和消息内容
-						const privateUserId = this.getNodeParameter('user_id', index);
-						body.user_id = privateUserId;
-
-							// 检查是否使用转发模式
-							const privateForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
-							
-							if (privateForwardMode) {
-								// 使用转发消息格式
-								const forwardMessages = this.getNodeParameter('forwardMessages', index) as {
-									messages: Array<{
-										user_id: string;
-										nickname: string;
-										addImage: boolean;
-										imageSource?: string;
-										imageUrl?: string;
-										imagePath?: string;
-										imageBase64?: string;
-									}>;
-								};
-								
-								// 获取转发消息设置
-								const forwardSettings = this.getNodeParameter('forwardSettings', index, {}) as {
-									summary?: string;
-									source?: string;
-									prompt?: string;
-								};
-								
-								// 获取文本内容
-								const newsMessages = this.getNodeParameter('newsMessages', index, { news: [] }) as {
-									news: Array<{
-										text: string;
-									}>;
-								};
-								
-								// 转换为OneBot API所需的格式
-								const messages = forwardMessages.messages.map(msg => {
-									// 默认使用空内容
-									let content: any = '';
-									
-									// 检查是否需要添加图片
-									if (msg.addImage) {
-										try {
-											let imagePath = '';
-											
-											// 根据图片来源获取图片路径
-											const imageSource = msg.imageSource || 'url';
-											
-											if (imageSource === 'url') {
-												// 网络图片
-												imagePath = msg.imageUrl || '';
-											} else if (imageSource === 'file') {
-												// 本地文件需要添加file://前缀
-												const filePath = msg.imagePath || '';
-												imagePath = filePath ? 'file://' + filePath : '';
-											} else if (imageSource === 'base64') {
-												// Base64编码需要添加base64://前缀
-												const base64Data = msg.imageBase64 || '';
-												imagePath = base64Data ? 'base64://' + base64Data : '';
-											}
-											
-											// 添加图片CQ码
-											if (imagePath && imagePath.trim() !== '') {
-												// 如果消息内容为空，则只发送图片
-												content = `[CQ:image,file=${imagePath}]`;
-											} else {
-												console.log('转发消息中图片路径为空，跳过添加图片');
-											}
-										} catch (error) {
-											console.error('处理转发消息图片时出错:', error instanceof Error ? error.message : String(error));
-											// 如果出错，继续处理文本消息，不添加图片
-										}
-									}
-									
-									// 确保使用用户输入的user_id和nickname，为空时使用默认值
-									const userId = msg.user_id && msg.user_id.trim() !== '' ? msg.user_id : '10000';
-									const nickname = msg.nickname && msg.nickname.trim() !== '' ? msg.nickname : '用户';
-									
-									return {
-										type: 'node',
-										data: {
-											user_id: userId,
-											nickname: nickname,
-											content
-										}
-									};
-								});
-								
-								body = {
-									user_id: privateUserId,
-									messages,
-								};
-								
-								// 添加摘要、提示和来源
-								if (forwardSettings.summary) body.summary = forwardSettings.summary;
-								if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
-								if (forwardSettings.source) body.source = forwardSettings.source;
-								
-								// 添加文本内容
-								if (newsMessages.news && newsMessages.news.length > 0) {
-									body.news = newsMessages.news.map(item => ({ text: item.text }));
-								} else {
-									// 确保始终有news字段，即使没有设置
-									body.news = [{ text: "不许点进来！" }];
-								}
-								
-								endpoint = 'send_private_forward_msg';
-								console.log('send_private_forward_msg参数:', JSON.stringify(body));
-							} else {
-								// 获取消息内容
-								let privateMessageContent = this.getNodeParameter('message', index) as string;
-
-								// 检查是否需要发送图片
-								const privateSendImage = this.getNodeParameter('sendImage', index, false) as boolean;
-								if (privateSendImage) {
-									try {
-										console.log(`[私聊消息] 发送图片标志为true，开始处理图片`);
-										// 使用默认值'url'，确保即使获取不到也有默认值
-										const imageSource = this.getNodeParameter('imageSource', index, 'url') as string;
-										console.log(`[私聊消息] 图片来源: ${imageSource}`);
-										let imagePath = '';
-
-										if (imageSource === 'url') {
-											imagePath = this.getNodeParameter('imageUrl', index, '') as string;
-											console.log(`[私聊消息] 图片URL: ${imagePath}`);
-										} else if (imageSource === 'file') {
-											// 本地文件需要添加file://前缀
-											const filePath = this.getNodeParameter('imagePath', index, '') as string;
-											console.log(`[私聊消息] 本地图片路径: ${filePath}`);
-											imagePath = filePath ? 'file://' + filePath : '';
-										} else if (imageSource === 'base64') {
-											// Base64编码需要添加base64://前缀
-											const base64Data = this.getNodeParameter('imageBase64', index, '') as string;
-											console.log(`[私聊消息] Base64图片数据长度: ${base64Data.length}`);
-											imagePath = base64Data ? 'base64://' + base64Data : '';
-										}
-
-										// 只有当图片路径不为空时才添加图片
-										if (imagePath && imagePath.trim() !== '') {
-											console.log(`[私聊消息] 图片路径有效，添加图片CQ码`);
-											if (!privateMessageContent.trim()) {
-												privateMessageContent = `[CQ:image,file=${imagePath}]`;
-											} else {
-												privateMessageContent = `${privateMessageContent}\n[CQ:image,file=${imagePath}]`;
-											}
-										} else {
-											console.log('[私聊消息] 图片路径为空，跳过添加图片CQ码');
-										}
-									} catch (error) {
-										console.error('[私聊消息] 处理图片时出错:', error instanceof Error ? error.message : String(error));
-										// 如果出错，继续处理文本消息，不添加图片
-									}
-								}
-
-								body.message = privateMessageContent;
-						endpoint = 'send_private_msg';
-						console.log('send_private_msg参数:', JSON.stringify(body));
-							}
-						break;
-					// friend资源相关的操作已移至FriendActions.ts
-					case 'send_group_msg':
-						// 发送群消息：设置群号和消息内容
-						if (!groupId) {
-							throw new Error('发送群消息需要有效的群ID，但未提供');
-						}
-						body.group_id = groupId;
-
-							// 检查是否使用转发模式
-							const groupForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
-							
-							if (groupForwardMode) {
-								// 使用转发消息格式
-								const forwardMessages = this.getNodeParameter('forwardMessages', index) as {
-									messages: Array<{
-										user_id: string;
-										nickname: string;
-										addImage: boolean;
-										imageSource?: string;
-										imageUrl?: string;
-										imagePath?: string;
-										imageBase64?: string;
-									}>;
-								};
-								
-								// 获取转发消息设置
-								const forwardSettings = this.getNodeParameter('forwardSettings', index, {}) as {
-									summary?: string;
-									source?: string;
-									prompt?: string;
-								};
-								
-								// 获取文本内容
-								const newsMessages = this.getNodeParameter('newsMessages', index, { news: [] }) as {
-									news: Array<{
-										text: string;
-									}>;
-								};
-								
-								// 转换为OneBot API所需的格式
-								const messages = forwardMessages.messages.map(msg => {
-									// 默认使用空内容
-									let content: any = '';
-									
-									// 检查是否需要添加图片
-									if (msg.addImage) {
-										try {
-											let imagePath = '';
-											
-											// 根据图片来源获取图片路径
-											const imageSource = msg.imageSource || 'url';
-											
-											if (imageSource === 'url') {
-												// 网络图片
-												imagePath = msg.imageUrl || '';
-											} else if (imageSource === 'file') {
-												// 本地文件需要添加file://前缀
-												const filePath = msg.imagePath || '';
-												imagePath = filePath ? 'file://' + filePath : '';
-											} else if (imageSource === 'base64') {
-												// Base64编码需要添加base64://前缀
-												const base64Data = msg.imageBase64 || '';
-												imagePath = base64Data ? 'base64://' + base64Data : '';
-											}
-											
-											// 添加图片CQ码
-											if (imagePath && imagePath.trim() !== '') {
-												// 如果消息内容为空，则只发送图片
-												content = `[CQ:image,file=${imagePath}]`;
-											} else {
-												console.log('群聊转发消息中图片路径为空，跳过添加图片');
-											}
-										} catch (error) {
-											console.error('处理群聊转发消息图片时出错:', error instanceof Error ? error.message : String(error));
-											// 如果出错，继续处理文本消息，不添加图片
-										}
-									}
-									
-									// 确保使用用户输入的user_id和nickname，为空时使用默认值
-									const userId = msg.user_id && msg.user_id.trim() !== '' ? msg.user_id : '10000';
-									const nickname = msg.nickname && msg.nickname.trim() !== '' ? msg.nickname : '用户';
-									
-									return {
-										type: 'node',
-										data: {
-											user_id: userId,
-											nickname: nickname,
-											content
-										}
-									};
-								});
-								
-								body = {
-									group_id: groupId,
-									messages,
-								};
-								
-								// 添加摘要、提示和来源
-								if (forwardSettings.summary) body.summary = forwardSettings.summary;
-								if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
-								if (forwardSettings.source) body.source = forwardSettings.source;
-								
-								// 添加文本内容
-								if (newsMessages.news && newsMessages.news.length > 0) {
-									body.news = newsMessages.news.map(item => ({ text: item.text }));
-								} else {
-									// 确保始终有news字段，即使没有设置
-									body.news = [{ text: "不许点进来！" }];
-								}
-								
-								endpoint = 'send_group_forward_msg';
-								console.log('send_group_forward_msg参数:', JSON.stringify(body));
-							} else {
-								// 获取消息内容
-								let messageContent = this.getNodeParameter('message', index) as string;
-
-								// 检查是否需要@全体成员
-								const atAll = this.getNodeParameter('atAll', index, false) as boolean;
-								if (atAll) {
-									// 在消息前添加@全体成员CQ码
-									messageContent = '[CQ:at,qq=all] ' + messageContent;
-								}
-
-								// 检查是否需要@特定成员
-								const atUser = this.getNodeParameter('atUser', index, false) as boolean;
-								if (atUser) {
-									const atUserId = this.getNodeParameter('atUserId', index) as string;
-									messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
-								}
-
-								// 检查是否需要发送图片
-								const sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
-								if (sendImage) {
-									try {
-										console.log(`[群聊消息] 发送图片标志为true，开始处理图片`);
-										// 使用默认值'url'，确保即使获取不到也有默认值
-										const imageSource = this.getNodeParameter('imageSource', index, 'url') as string;
-										console.log(`[群聊消息] 图片来源: ${imageSource}`);
-										let imagePath = '';
-
-										if (imageSource === 'url') {
-											imagePath = this.getNodeParameter('imageUrl', index, '') as string;
-											console.log(`[群聊消息] 图片URL: ${imagePath}`);
-										} else if (imageSource === 'file') {
-											// 本地文件需要添加file://前缀
-											const filePath = this.getNodeParameter('imagePath', index, '') as string;
-											console.log(`[群聊消息] 本地图片路径: ${filePath}`);
-											imagePath = filePath ? 'file://' + filePath : '';
-										} else if (imageSource === 'base64') {
-											// Base64编码需要添加base64://前缀
-											const base64Data = this.getNodeParameter('imageBase64', index, '') as string;
-											console.log(`[群聊消息] Base64图片数据长度: ${base64Data.length}`);
-											imagePath = base64Data ? 'base64://' + base64Data : '';
-										}
-
-										// 只有当图片路径不为空时才添加图片
-										if (imagePath && imagePath.trim() !== '') {
-											console.log(`[群聊消息] 图片路径有效，添加图片CQ码`);
-											// 处理不同情况下的消息格式
-											// 1. 只有图片
-											if (!messageContent.trim()) {
-												messageContent = `[CQ:image,file=${imagePath}]`;
-											}
-											// 2. @全体成员 + 图片
-											else if (messageContent.trim() === '[CQ:at,qq=all] ') {
-												messageContent = `[CQ:at,qq=all] [CQ:image,file=${imagePath}]`;
-											}
-											// 3. @特定成员 + 图片
-											else if (messageContent.includes('[CQ:at,qq=') && !messageContent.includes('[CQ:at,qq=all]')) {
-												// 保持@用户的部分，添加图片
-												messageContent = `${messageContent}[CQ:image,file=${imagePath}]`;
-											}
-											// 4. 普通文本 + 图片
-											else {
-												messageContent = `${messageContent}\n[CQ:image,file=${imagePath}]`;
-											}
-										} else {
-											console.log('[群聊消息] 图片路径为空，跳过添加图片CQ码');
-										}
-									} catch (error) {
-										console.error('[群聊消息] 处理群聊图片时出错:', error instanceof Error ? error.message : String(error));
-										// 如果出错，继续处理文本消息，不添加图片
-									}
-								}
-
-								body.message = messageContent;
-						endpoint = 'send_group_msg';
-						console.log('send_group_msg参数:', JSON.stringify(body));
-							}
-						break;
-					// group资源相关的操作已移至GroupActions.ts
-									// group资源相关的操作已移至GroupActions.ts
-				}
-
-				const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
-					// 如果是虚拟端点，直接返回本地结果，不再发送请求
-					let data;
-					if (endpoint === 'dummy') {
-						data = body;
+			for (let index = 0; index < itemsLength; index++) {
+				try {
+					// 获取操作类型及资源类型
+					const operation = this.getNodeParameter('operation', index) as string;
+					const resource = this.getNodeParameter('resource', index) as string;
+					console.log(`正在执行操作: ${operation}, 资源类型: ${resource}`);
+					
+					// 根据资源类型使用对应的模块处理
+					if (resource === 'bot') {
+						const botActionResponse = await executeBotOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(botActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
+					} else if (resource === 'friend') {
+						const friendActionResponse = await executeFriendOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(friendActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
+					} else if (resource === 'group') {
+						const groupActionResponse = await executeGroupOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(groupActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
+					} else if (resource === 'misc') {
+						const miscActionResponse = await executeMiscOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(miscActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
+					} else if (resource === 'message') {
+						const messageActionResponse = await executeMessageOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(messageActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
 					} else {
-						data = await apiRequest.call(this, method, endpoint, body);
+						throw new Error(`未知的资源类型: ${resource}`);
 					}
-				const json = this.helpers.returnJsonArray(data);
-				const executionData = this.helpers.constructExecutionMetaData(json, {
-					itemData: { item: index },
-				});
-
-				responseData.push(...executionData);
-			} catch (error) {
-				console.error(`执行操作 ${action.operation} 时出错:`, error instanceof Error ? error.message : String(error));
-				
-				// 创建错误响应数据
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				const errorItem = {
-					json: { 
-						error: errorMessage,
-						success: false
-					}
-				};
-				const executionData = this.helpers.constructExecutionMetaData([errorItem], {
-					itemData: { item: index },
+				} catch (error) {
+					console.error(`执行操作时出错:`, error instanceof Error ? error.message : String(error));
+					
+					// 创建错误响应数据
+					const errorMessage = error instanceof Error ? error.message : String(error);
+					const errorItem = {
+						json: { 
+							error: errorMessage,
+							success: false
+						}
+					};
+					const executionData = this.helpers.constructExecutionMetaData([errorItem], {
+						itemData: { item: index },
 					});
 
 					responseData.push(...executionData);
@@ -1421,198 +1040,9 @@ export class OneBot implements INodeType {
 		} else {
 			// 处理多个输入项，自动使用转发消息模式
 			try {
-				// 获取第一个输入项的操作类型和目标ID
-				const operation = this.getNodeParameter('operation', 0) as string;
-				
-				// 只支持发送消息操作的转发
-				if (!['send_private_msg', 'send_group_msg'].includes(operation)) {
-					throw new Error('多输入项转发消息仅支持发送私聊消息和群消息操作');
-				}
-				
-				// 准备转发消息参数
-				let body: IDataObject = {};
-				let endpoint: string = '';
-				
-				// 尝试从第一个输入项获取用户ID和昵称
-				let defaultUserId = '';
-				let defaultNickname = '';
-				
-				// 优先使用用户在前端设置的转发消息信息
-				try {
-					const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
-					
-					if (hasForwardSettings) {
-						// 获取第一个转发消息的用户ID和昵称作为默认值
-						const forwardMessages = this.getNodeParameter('forwardMessages', 0) as {
-							messages: Array<{
-								user_id: string;
-								nickname: string;
-							}>;
-						};
-						
-						if (forwardMessages?.messages && forwardMessages.messages.length > 0) {
-							defaultUserId = forwardMessages.messages[0].user_id || '';
-							defaultNickname = forwardMessages.messages[0].nickname || '';
-							console.log(`使用用户提供的默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
-						}
-					}
-				} catch (e) {
-					console.log('获取用户指定的转发消息信息失败，使用默认值');
-				}
-				
-				// 如果前面未获取到有效的默认值，尝试获取机器人信息
-				if (!defaultUserId) {
-					try {
-						const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info');
-						const botInfo = loginInfo?.data || { user_id: '0', nickname: 'Bot' };
-						defaultUserId = botInfo.user_id;
-						defaultNickname = botInfo.nickname;
-						console.log(`使用机器人信息作为默认ID: ${defaultUserId}, 昵称: ${defaultNickname}`);
-					} catch (error) {
-						console.log('获取机器人信息失败，使用硬编码默认值');
-						defaultUserId = '0'; 
-						defaultNickname = 'Bot';
-					}
-				}
-				
-				// 构建转发消息数组
-				const messages = [];
-				
-				for (let index = 0; index < itemsLength; index++) {
-					// 获取当前项的消息内容
-					let messageContent = '';
-					
-					try {
-						// 尝试获取消息内容
-						messageContent = this.getNodeParameter('message', index, '') as string;
-						
-						// 检查是否有@全体成员或@特定成员（针对群消息）
-						if (operation === 'send_group_msg') {
-							try {
-								// 检查是否需要@全体成员
-								const atAll = this.getNodeParameter('atAll', index, false) as boolean;
-								if (atAll) {
-									// 在消息前添加@全体成员CQ码
-									messageContent = '[CQ:at,qq=all] ' + messageContent;
-								}
-
-								// 检查是否需要@特定成员
-								const atUser = this.getNodeParameter('atUser', index, false) as boolean;
-								if (atUser) {
-									const atUserId = this.getNodeParameter('atUserId', index, '') as string;
-									if (atUserId) {
-										messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
-									}
-								}
-							} catch (error) {
-								console.error(`处理第${index+1}项的@功能时出错:`, error instanceof Error ? error.message : String(error));
-								// 如果出错，继续处理文本消息，不添加@
-							}
-						}
-					} catch (e) {
-						// 如果获取失败，尝试使用JSON数据作为消息内容
-						try {
-							messageContent = JSON.stringify(items[index].json);
-						} catch (jsonError) {
-							messageContent = '无法获取消息内容';
-						}
-					}
-					
-					// 构建消息对象 - 使用标准格式和默认的user_id
-					const messageObj = {
-						type: 'node',
-						data: {
-							user_id: defaultUserId,
-							nickname: defaultNickname,
-							content: messageContent
-						}
-					};
-					
-					messages.push(messageObj);
-				}
-				
-				// 构建转发消息体
-				if (operation === 'send_private_msg') {
-					try {
-						const privateUserId = this.getNodeParameter('user_id', 0) as string;
-						body = {
-							user_id: privateUserId,
-							messages,
-						};
-						endpoint = 'send_private_forward_msg';
-					} catch (error) {
-						console.error('获取私聊用户ID时出错:', error instanceof Error ? error.message : String(error));
-						throw new Error('获取私聊用户ID失败，无法发送转发消息');
-					}
-				} else {
-					try {
-						const groupId = this.getNodeParameter('group_id', 0) as string;
-						body = {
-							group_id: groupId,
-							messages,
-						};
-						endpoint = 'send_group_forward_msg';
-					} catch (error) {
-						console.error('获取群ID时出错:', error instanceof Error ? error.message : String(error));
-						throw new Error('获取群ID失败，无法发送转发消息');
-					}
-				}
-				
-				// 尝试从第一个输入项获取转发消息设置
-				try {
-					// 检查第一个输入项是否有转发消息设置
-					const hasForwardSettings = this.getNodeParameter('forward_mode', 0, false) as boolean;
-					
-					if (hasForwardSettings) {
-						// 转发消息设置
-						const forwardSettings = this.getNodeParameter('forwardSettings', 0, {}) as {
-							summary?: string;
-							source?: string;
-							prompt?: string;
-						};
-						
-						if (forwardSettings.summary) body.summary = forwardSettings.summary;
-						if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
-						if (forwardSettings.source) body.source = forwardSettings.source;
-						
-						// 获取文本内容
-						try {
-							const newsMessages = this.getNodeParameter('newsMessages', 0, { news: [] }) as {
-								news: Array<{
-									text: string;
-								}>;
-							};
-							
-							if (newsMessages.news && newsMessages.news.length > 0) {
-								body.news = newsMessages.news.map(item => ({ text: item.text }));
-							} else {
-								// 如果没有设置文本内容，使用默认的
-								body.news = [{ text: "不许点进来！" }];
-							}
-						} catch (e) {
-							// 如果获取失败，使用默认值
-							body.news = [{ text: "不许点进来！" }];
-						}
-					} else {
-						body.summary = '哼哼';
-						body.prompt = '宝宝，我爱你';
-						body.source = '坏蛋！';
-						body.news = [{ text: "不许点进来！" }];
-					}
-				} catch (e) {
-					// 使用默认个性化值
-					body.summary = '哼哼';
-					body.prompt = '宝宝，我爱你';
-					body.source = '坏蛋！';
-					body.news = [{ text: "不许点进来！" }];
-				}
-				
-				console.log(`自动转发消息参数:`, JSON.stringify(body));
-				
-				// 发送请求
-				const method: IHttpRequestMethods = 'POST';
-				const data = await apiRequest.call(this, method, endpoint, body);
-				const json = this.helpers.returnJsonArray(data);
+				// 使用MessageActions中的处理多输入项函数
+				const multiForwardResponse = await handleMultipleInputsForward.call(this, itemsLength);
+				const json = this.helpers.returnJsonArray(multiForwardResponse);
 				const executionData = this.helpers.constructExecutionMetaData(json, {
 					itemData: { item: 0 },
 				});
