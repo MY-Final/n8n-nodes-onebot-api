@@ -411,7 +411,8 @@ export class OneBot implements INodeType {
 				default: {
 					summary: '聊天记录',
 					source: '来自好友的消息',
-					prompt: '查看完整聊天记录'
+					prompt: '查看完整聊天记录',
+					news: '查看详细内容'
 				},
 				placeholder: '配置转发消息的基本信息',
 				options: [
@@ -436,47 +437,15 @@ export class OneBot implements INodeType {
 						default: '查看完整聊天记录',
 						description: '显示在转发消息卡片底部的提示文字',
 					},
+					{
+						displayName: '文本内容',
+						name: 'news',
+						type: 'string',
+						default: '查看详细内容',
+						description: '转发消息中的文本内容',
+					},
 				],
 				description: '配置转发消息的显示效果',
-				displayOptions: {
-					show: {
-						resource: ['message'],
-						operation: ['send_private_msg', 'send_group_msg'],
-						forward_mode: [true],
-					},
-				},
-			},
-			{
-				displayName: '文本内容',
-				name: 'newsMessages',
-				type: 'fixedCollection',
-				typeOptions: {
-					multipleValues: true,
-				},
-				default: {
-					news: [
-						{
-							text: '查看详细内容'
-						}
-					]
-				},
-				placeholder: '添加文本内容',
-				options: [
-					{
-						name: 'news',
-						displayName: '文本项',
-						values: [
-							{
-								displayName: '文本',
-								name: 'text',
-								type: 'string',
-								default: '查看详细内容',
-								description: '文本内容',
-							},
-						],
-					},
-				],
-				description: '添加文本内容（注意：某些客户端可能无法正确显示此内容）',
 				displayOptions: {
 					show: {
 						resource: ['message'],

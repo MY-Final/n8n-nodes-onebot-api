@@ -96,36 +96,26 @@ export async function handleMultipleInputsForward(
                 summary?: string;
                 source?: string;
                 prompt?: string;
+                news?: string;
             };
             
             body.summary = forwardSettings.summary || '聊天记录';
             body.source = forwardSettings.source || '';
             body.prompt = forwardSettings.prompt || '查看完整聊天记录';
             
-            // 添加文本内容
-            try {
-                const newsMessages = this.getNodeParameter('newsMessages', 0, { news: [] }) as {
-                    news: Array<{
-                        text: string;
-                    }>;
-                };
-                
-                if (newsMessages.news && newsMessages.news.length > 0) {
-                    body.news = newsMessages.news.map(item => ({ text: item.text || "不许点进来！" }));
-                    console.log(`添加了${newsMessages.news.length}条自定义文本内容`);
-                } else {
-                    body.news = [];
-                }
-            } catch (error) {
-                console.log('获取文本内容失败，使用默认值:', error instanceof Error ? error.message : String(error));
-                body.news = [];
+            // 处理news参数
+            if (forwardSettings.news) {
+                body.news = [{ text: forwardSettings.news }];
+                console.log(`添加news文本内容: ${forwardSettings.news}`);
+            } else {
+                body.news = [{ text: '查看详细内容' }];
             }
             
             // 检查输入数据中是否含有额外设置
             try {
                 const itemData = this.getInputData(0);
                 if (itemData[0] && itemData[0].json) {
-                    // 检查输入中的prompt, summary, source, news字段
+                    // 检查输入中的prompt, summary, source字段
                     if (itemData[0].json.prompt && typeof itemData[0].json.prompt === 'string') {
                         body.prompt = itemData[0].json.prompt;
                         console.log(`从输入数据中获取prompt: ${body.prompt}`);
@@ -154,14 +144,12 @@ export async function handleMultipleInputsForward(
             console.log('获取转发设置时出错，使用默认值:', error instanceof Error ? error.message : String(error));
             body.summary = '聊天记录';
             body.prompt = '查看完整聊天记录';
-            body.news = [];
+            body.news = [{ text: '查看详细内容' }];
         }
         
         console.log(`准备发送${(body.messages as IDataObject[]).length}条转发消息，端点: ${endpoint}`);
         console.log(`转发设置: 摘要=${body.summary}, 提示=${body.prompt}, 来源=${body.source || '无'}`);
-        if (body.news && Array.isArray(body.news)) {
-            console.log(`包含自定义文本内容`);
-        }
+        console.log(`news数组包含${Array.isArray(body.news) ? body.news.length : 0}个文本项`);
         
         // 发送请求
         try {
