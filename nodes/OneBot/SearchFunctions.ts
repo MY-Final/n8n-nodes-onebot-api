@@ -50,7 +50,7 @@ export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodeP
 					{
 						name: `使用QQ号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的QQ号`,
+						description: '直接使用输入的QQ号',
 					},
 				];
 			}
@@ -99,7 +99,7 @@ export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodeP
 					{
 						name: `使用QQ号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的QQ号`,
+						description: '直接使用输入的QQ号',
 						searchValues: {
 							displayName: '',
 							userId: currentInput,
@@ -148,7 +148,7 @@ export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodeP
 				{
 					name: `使用QQ号: ${currentInput}`,
 					value: currentInput,
-					description: `直接使用输入的QQ号`,
+					description: '直接使用输入的QQ号',
 				},
 			];
 		}
@@ -215,7 +215,7 @@ export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePr
 					{
 						name: `使用群号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的群号`,
+						description: '直接使用输入的群号',
 					},
 				];
 			}
@@ -260,7 +260,7 @@ export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePr
 					{
 						name: `使用群号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的群号`,
+						description: '直接使用输入的群号',
 						searchValues: {
 							groupName: '',
 							groupId: currentInput,
@@ -309,7 +309,7 @@ export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePr
 				{
 					name: `使用群号: ${currentInput}`,
 					value: currentInput,
-					description: `直接使用输入的群号`,
+					description: '直接使用输入的群号',
 				},
 			];
 		}
@@ -432,7 +432,7 @@ export async function getGroupMemberList(
 					{
 						name: `使用QQ号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的QQ号`,
+						description: '直接使用输入的QQ号',
 					},
 				];
 			}
@@ -533,7 +533,7 @@ export async function getGroupMemberList(
 					{
 						name: `使用QQ号: ${currentInput}`,
 						value: currentInput,
-						description: `直接使用输入的QQ号`,
+						description: '直接使用输入的QQ号',
 						searchValues: {
 							displayName: '',
 							userId: currentInput,
@@ -582,7 +582,7 @@ export async function getGroupMemberList(
 				{
 					name: `使用QQ号: ${currentInput}`,
 					value: currentInput,
-					description: `直接使用输入的QQ号`,
+					description: '直接使用输入的QQ号',
 				},
 			];
 		}
