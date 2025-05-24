@@ -5,6 +5,7 @@ import {
 	INodeTypeDescription,
 	INodePropertyOptions,
 	ILoadOptionsFunctions,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import { apiRequest } from './GenericFunctions';
@@ -16,6 +17,7 @@ import { executeGroupOperation } from './GroupActions';
 import { executeMiscOperation } from './MiscActions';
 import { executeMessageOperation } from './MessageActions';
 import { handleMultipleInputsForward } from './ForwardActions';
+import { executeMemberOperation } from './MemberActions';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -46,12 +48,20 @@ export class OneBot implements INodeType {
 				default: 'message',
 				options: [
 					{
-						name: '机器人',
-						value: 'bot',
+						name: '成员关系',
+						value: 'member',
 					},
 					{
 						name: '好友',
 						value: 'friend',
+					},
+					{
+						name: '机器人',
+						value: 'bot',
+					},
+					{
+						name: '其他',
+						value: 'misc',
 					},
 					{
 						name: '群组',
@@ -60,10 +70,6 @@ export class OneBot implements INodeType {
 					{
 						name: '消息',
 						value: 'message',
-					},
-					{
-						name: '其他',
-						value: 'misc',
 					},
 				],
 			},
@@ -111,7 +117,7 @@ export class OneBot implements INodeType {
 					{
 						name: '私聊戳一戳',
 						value: 'send_friend_poke',
-						action: 'Send friend Poke',
+						action: 'Send friend poke',
 					},
 				],
 				displayOptions: {
@@ -128,14 +134,9 @@ export class OneBot implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: '获取群信息',
-						value: 'get_group_info',
-						action: 'Get group info',
-					},
-					{
-						name: '获取群列表',
-						value: 'get_group_list',
-						action: 'Get group list',
+						name: '获取群成员列表',
+						value: 'get_group_member_list',
+						action: 'Get group member list',
 					},
 					{
 						name: '获取群成员信息',
@@ -143,52 +144,55 @@ export class OneBot implements INodeType {
 						action: 'Get group member info',
 					},
 					{
-						name: '获取群成员列表',
-						value: 'get_group_member_list',
-						action: 'Get group member list',
+						name: '获取群列表',
+						value: 'get_group_list',
+						action: 'Get group list',
 					},
 					{
-						name: '踢出群成员',
-						value: 'set_group_kick',
-						action: 'Set_group_kick',
-						description: '要求机器人是管理员或者群主',
+						name: '获取群信息',
+						value: 'get_group_info',
+						action: 'Get group info',
 					},
 					{
 						name: '禁言群成员',
 						value: 'set_group_ban',
-						action: 'Set Group Ban',
+						action: 'Set group ban',
 						description: '要求机器人是管理员或者群主',
 					},
 					{
 						name: '全员禁言',
 						value: 'set_group_whole_ban',
-						action: 'Set Group Whole Ban', 
+						action: 'Set group whole ban',
 						description: '要求机器人是管理员或者群主',
-					},
-					{
-						name: '设置群名称',
-						value: 'set_group_name',
-						action: 'Set Group Name',
-						description: '要求机器人是管理员或者群主',
-					},
-					{
-						name: '设置群管理员',
-						value: 'set_group_admin',
-						action: 'Set Group Admin',
-						description: '要求机器人是群主',
 					},
 					{
 						name: '群戳一戳',
 						value: 'group_poke',
-						action: 'Group Poke',
+						action: 'Group poke',
 						description: '群戳一戳，戳了一下你，嘻嘻',
-
+					},
+					{
+						name: '设置群管理员',
+						value: 'set_group_admin',
+						action: 'Set group admin',
+						description: '要求机器人是群主',
+					},
+					{
+						name: '设置群名称',
+						value: 'set_group_name',
+						action: 'Set group name',
+						description: '要求机器人是管理员或者群主',
 					},
 					{
 						name: '设置群签到',
 						value: 'set_group_sign',
-						action: 'Set Group Sign',
-						description: '设置群签到',
+						action: 'Set group sign',
+					},
+					{
+						name: '踢出群成员',
+						value: 'set_group_kick',
+						action: 'Set group kick',
+						description: '要求机器人是管理员或者群主',
 					},
 				],
 				displayOptions: {
@@ -196,6 +200,87 @@ export class OneBot implements INodeType {
 						resource: ['group'],
 					},
 				},
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				default: 'set_group_leave',
+				noDataExpression: true,
+				options: [
+					{
+						name: '退出群聊',
+						value: 'set_group_leave',
+						action: 'Leave group',
+						description: '退出群聊，如果是群主则解散群',
+					},
+					{
+						name: '删除好友',
+						value: 'delete_friend',
+						action: 'Delete friend',
+						description: 'Delete friend',
+					},
+					{
+						name: '批量操作',
+						value: 'batch_operation',
+						action: 'Batch operation',
+						description: '批量退群和删除好友，支持白名单',
+					},
+				],
+				displayOptions: {
+					show: {
+						resource: ['member'],
+					},
+				},
+			},
+			// 退群操作的参数
+			{
+				displayName: 'Group Name or ID',
+				name: 'group_id',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupList',
+				},
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['set_group_leave'],
+						resource: ['member'],
+					},
+				},
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			},
+			{
+				displayName: '是否解散群',
+				name: 'is_dismiss',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['set_group_leave'],
+						resource: ['member'],
+					},
+				},
+				description: 'Whether to dismiss the group (if you are the owner)',
+			},
+			// 删除好友操作的参数
+			{
+				displayName: 'User Name or ID',
+				name: 'user_id',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getFriendList',
+				},
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['delete_friend'],
+						resource: ['member'],
+					},
+				},
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Operation',
@@ -250,7 +335,7 @@ export class OneBot implements INodeType {
 				name: 'user_id',
 				type: 'options',
 				description:
-					'选择好友，可以输入昵称或QQ号进行搜索，也可以直接输入QQ号',
+					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getFriendList',
 				},
@@ -266,8 +351,8 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
-					'选择群组，可以输入群名称或群号进行搜索',
+				description:
+					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupList',
 				},
@@ -290,8 +375,8 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
-					'选择您有管理权限的群组（群主或管理员）',
+				description:
+					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getManagedGroupList',
 				},
@@ -312,8 +397,8 @@ export class OneBot implements INodeType {
 				displayName: 'Group Name or ID',
 				name: 'group_id',
 				type: 'options',
-				description: 
-					'选择您是群主的群组（只有群主才能设置管理员）',
+				description:
+					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getOwnedGroupList',
 				},
@@ -337,7 +422,7 @@ export class OneBot implements INodeType {
 				},
 				default: '',
 				description:
-					'选择要戳的群成员，可以输入昵称或QQ号进行搜索，也可以直接输入QQ号',
+					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				required: true,
 				displayOptions: {
 					show: {
@@ -346,7 +431,7 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
-				displayName: '成员 ID',
+				displayName: '成员 Names or IDs',
 				name: 'user_ids',
 				type: 'multiOptions',
 				typeOptions: {
@@ -355,7 +440,7 @@ export class OneBot implements INodeType {
 				},
 				default: [],
 				description:
-					'选择要操作的群成员，可以选择多个成员',
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				required: true,
 				displayOptions: {
 					show: {
@@ -396,7 +481,7 @@ export class OneBot implements INodeType {
 				name: 'forward_mode',
 				type: 'boolean',
 				default: false,
-				description: '是否使用转发消息格式发送多条消息',
+				description: 'Whether to use forward message format for multiple messages',
 				displayOptions: {
 					show: {
 						resource: ['message'],
@@ -455,11 +540,57 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
+				displayName: '自定义发送者信息',
+				name: 'customSender',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to customize sender information for each message',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+						forward_mode: [true],
+					},
+				},
+			},
+			{
+				displayName: '发送者信息',
+				name: 'senderInfo',
+				type: 'collection',
+				default: {},
+				placeholder: '配置转发消息的发送者信息',
+				options: [
+					{
+						displayName: '用户ID',
+						name: 'user_id',
+						type: 'string',
+						default: '',
+						description: '显示的发送者QQ号（不填则使用机器人QQ号）',
+					},
+					{
+						displayName: '昵称',
+						name: 'nickname',
+						type: 'string',
+						default: '',
+						description: '显示的发送者昵称（不填则使用机器人昵称）',
+					},
+				],
+				description: '配置发送者信息（用于多条消息使用相同发送者）',
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send_private_msg', 'send_group_msg'],
+						forward_mode: [true],
+						customSender: [true],
+					},
+				},
+			},
+			{
 				displayName: '@全体成员',
 				name: 'atAll',
 				type: 'boolean',
 				default: false,
-				description: '在消息开头添加@全体成员',
+				description: 'Whether to add @all at the beginning of the message',
 				displayOptions: {
 					show: {
 						resource: ['message'],
@@ -473,7 +604,7 @@ export class OneBot implements INodeType {
 				name: 'atUser',
 				type: 'boolean',
 				default: false,
-				description: '在消息中@特定群成员',
+				description: 'Whether to @specific members in the message',
 				displayOptions: {
 					show: {
 						resource: ['message'],
@@ -483,7 +614,7 @@ export class OneBot implements INodeType {
 				},
 			},
 			{
-				displayName: '要@的成员',
+				displayName: '要@的成员 Name or ID',
 				name: 'atUserId',
 				type: 'options',
 				typeOptions: {
@@ -491,7 +622,7 @@ export class OneBot implements INodeType {
 					loadOptionsDependsOn: ['group_id'],
 				},
 				default: '',
-				description: '选择要@的群成员',
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				required: true,
 				displayOptions: {
 					show: {
@@ -507,7 +638,7 @@ export class OneBot implements INodeType {
 				name: 'sendImage',
 				type: 'boolean',
 				default: false,
-				description: '是否发送图片',
+				description: 'Whether to send images',
 				displayOptions: {
 					show: {
 						resource: ['message'],
@@ -616,7 +747,7 @@ export class OneBot implements INodeType {
 				displayName: 'Reject Future Join Requests',
 				name: 'reject_add_request',
 				type: 'boolean',
-				description: '加入群黑名单，不再接受加群申请',
+				description: 'Whether to add to blacklist and reject future join requests',
 				default: false,
 				displayOptions: {
 					show: {
@@ -629,7 +760,7 @@ export class OneBot implements INodeType {
 				displayName: 'Enable Ban',
 				name: 'enable',
 				type: 'boolean',
-				description: '是否启用全员禁言',
+				description: 'Whether to enable whole group ban',
 				default: true,
 				displayOptions: {
 					show: {
@@ -656,7 +787,7 @@ export class OneBot implements INodeType {
 				displayName: 'Enable Admin',
 				name: 'enable',
 				type: 'boolean',
-				description: '是否设置为管理员，true为设置，false为取消，注意：只有群主可以设置或取消管理员',
+				description: 'Whether to set as admin, true to set, false to unset, note: only group owner can set or unset admin',
 				default: true,
 				displayOptions: {
 					show: {
@@ -664,6 +795,98 @@ export class OneBot implements INodeType {
 						operation: ['set_group_admin'],
 					},
 				},
+			},
+			// 批量操作的参数
+			{
+				displayName: '操作模式',
+				name: 'batch_mode',
+				type: 'options',
+				options: [
+					{
+						name: '退出所有群聊',
+						value: 'groups',
+					},
+					{
+						name: '删除所有好友',
+						value: 'friends',
+					},
+					{
+						name: '两者都执行',
+						value: 'both',
+					},
+				],
+				default: 'both',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['batch_operation'],
+						resource: ['member'],
+					},
+				},
+				description: '选择要批量执行的操作',
+			},
+			{
+				displayName: '使用白名单',
+				name: 'use_whitelist',
+				type: 'boolean',
+				default: true,
+				displayOptions: {
+					show: {
+						operation: ['batch_operation'],
+						resource: ['member'],
+					},
+				},
+				description: 'Whether to use whitelist to exclude certain groups or friends',
+			},
+			{
+				displayName: '群聊 Names or IDs',
+				name: 'whitelist_groups',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupList',
+				},
+				default: [],
+				displayOptions: {
+					show: {
+						operation: ['batch_operation'],
+						resource: ['member'],
+						use_whitelist: [true],
+						batch_mode: ['groups', 'both'],
+					},
+				},
+				description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			},
+			{
+				displayName: '好友 Names or IDs',
+				name: 'whitelist_friends',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getFriendList',
+				},
+				default: [],
+				displayOptions: {
+					show: {
+						operation: ['batch_operation'],
+						resource: ['member'],
+						use_whitelist: [true],
+						batch_mode: ['friends', 'both'],
+					},
+				},
+				description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			},
+			{
+				displayName: '是否解散群聊',
+				name: 'is_dismiss_batch',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['batch_operation'],
+						resource: ['member'],
+						batch_mode: ['groups', 'both'],
+					},
+				},
+				description: 'Whether to dismiss groups when leaving (if you are the owner)',
 			},
 		],
 	};
@@ -678,30 +901,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-					
+
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-					
+
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-					
+
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: { 
+						data: {
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-					
+
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-					
+
 					const managedGroups = [];
-					
+
 					for (const group of groupListResponse.data) {
 						if (group.role && (group.role === 'admin' || group.role === 'owner')) {
 							managedGroups.push({
@@ -711,7 +934,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-						
+
 						try {
 							const query = { group_id: group.group_id, user_id: botId };
 							const memberInfo = await apiRequest.call(this, 'GET', 'get_group_member_info', undefined, query) as {
@@ -719,7 +942,7 @@ export class OneBot implements INodeType {
 									role?: string;
 								}
 							};
-							
+
 							if (memberInfo?.data?.role) {
 								const role = memberInfo.data.role;
 								if (role === 'admin' || role === 'owner') {
@@ -735,11 +958,11 @@ export class OneBot implements INodeType {
 							continue;
 						}
 					}
-					
+
 					if (managedGroups.length === 0) {
 						return [{ name: '没有管理权限的群聊', value: '', description: '机器人不是任何群的管理员或群主' }];
 					}
-					
+
 					return managedGroups;
 				} catch (error) {
 					console.error('获取管理的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -751,30 +974,30 @@ export class OneBot implements INodeType {
 					const loginInfo = await apiRequest.call(this, 'GET', 'get_login_info') as {
 						data: LoginInfo
 					};
-					
+
 					if (!loginInfo?.data?.user_id) {
 						console.error('获取登录信息失败，无法获取管理的群聊');
 						return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 					}
-					
+
 					const botId = loginInfo.data.user_id;
 					console.log(`当前机器人QQ: ${botId}`);
-					
+
 					const groupListResponse = await apiRequest.call(this, 'GET', 'get_group_list') as {
-						data: { 
+						data: {
 							group_id: number;
 							group_name: string;
 							role?: string;
 						}[];
 					};
-					
+
 					if (!groupListResponse?.data || !Array.isArray(groupListResponse.data)) {
 						console.error('获取群列表失败');
 						return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 					}
-					
+
 					const ownedGroups = [];
-					
+
 					for (const group of groupListResponse.data) {
 						// 先检查直接返回的角色信息
 						if (group.role === 'owner') {
@@ -785,7 +1008,7 @@ export class OneBot implements INodeType {
 							});
 							continue;
 						}
-						
+
 						// 如果没有直接的角色信息，查询成员信息
 						if (!group.role) {
 							try {
@@ -795,7 +1018,7 @@ export class OneBot implements INodeType {
 										role?: string;
 									}
 								};
-								
+
 								if (memberInfo?.data?.role === 'owner') {
 									ownedGroups.push({
 										name: `${group.group_name} (群主)`,
@@ -809,11 +1032,11 @@ export class OneBot implements INodeType {
 							}
 						}
 					}
-					
+
 					if (ownedGroups.length === 0) {
 						return [{ name: '没有群主权限的群聊', value: '', description: '机器人不是任何群的群主' }];
 					}
-					
+
 					return ownedGroups;
 				} catch (error) {
 					console.error('获取机器人是群主的群聊列表失败:', error instanceof Error ? error.message : String(error));
@@ -833,7 +1056,7 @@ export class OneBot implements INodeType {
 
 		// 检查是否有多个输入项，如果有则自动使用转发消息模式
 		const autoForwardMode = itemsLength > 1;
-		
+
 		// 如果只有一个输入项，正常处理
 		if (!autoForwardMode) {
 			// 处理单个输入项
@@ -843,7 +1066,7 @@ export class OneBot implements INodeType {
 					const operation = this.getNodeParameter('operation', index) as string;
 					const resource = this.getNodeParameter('resource', index) as string;
 					console.log(`正在执行操作: ${operation}, 资源类型: ${resource}`);
-					
+
 					// 根据资源类型使用对应的模块处理
 					if (resource === 'bot') {
 						const botActionResponse = await executeBotOperation.call(this, index);
@@ -880,16 +1103,23 @@ export class OneBot implements INodeType {
 					itemData: { item: index },
 				});
 				responseData.push(...executionData);
+					} else if (resource === 'member') {
+						const memberActionResponse = await executeMemberOperation.call(this, index);
+						const json = this.helpers.returnJsonArray(memberActionResponse);
+						const executionData = this.helpers.constructExecutionMetaData(json, {
+							itemData: { item: index },
+						});
+						responseData.push(...executionData);
 					} else {
-						throw new Error(`未知的资源类型: ${resource}`);
+						throw new NodeOperationError(this.getNode(), `未知的资源类型: ${resource}`);
 					}
 			} catch (error) {
 					console.error(`执行操作时出错:`, error instanceof Error ? error.message : String(error));
-				
+
 				// 创建错误响应数据
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				const errorItem = {
-					json: { 
+					json: {
 						error: errorMessage,
 						success: false
 					}
@@ -910,11 +1140,11 @@ export class OneBot implements INodeType {
 				const executionData = this.helpers.constructExecutionMetaData(json, {
 					itemData: { item: 0 },
 				});
-				
+
 				responseData.push(...executionData);
 			} catch (error) {
 				console.error(`执行多输入项转发消息时出错:`, error instanceof Error ? error.message : String(error));
-				
+
 				// 创建错误响应数据
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				const errorItem = {
@@ -926,7 +1156,7 @@ export class OneBot implements INodeType {
 				const executionData = this.helpers.constructExecutionMetaData([errorItem], {
 					itemData: { item: 0 },
 				});
-				
+
 				responseData.push(...executionData);
 			}
 		}
