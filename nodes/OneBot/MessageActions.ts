@@ -140,6 +140,7 @@ async function handlePrivateMessage(
                 imageUrl?: string;
                 imagePath?: string;
                 imageBase64?: string;
+                content?: string;
             }>;
         };
         
@@ -148,19 +149,30 @@ async function handlePrivateMessage(
             summary?: string;
             source?: string;
             prompt?: string;
+            news?: string;
         };
         
         // 获取文本内容
+        let newsItems: Array<{ text: string }> = [];
+        try {
         const newsMessages = this.getNodeParameter('newsMessages', index, { news: [] }) as {
             news: Array<{
                 text: string;
             }>;
         };
+            
+            if (newsMessages.news && newsMessages.news.length > 0) {
+                newsItems = newsMessages.news.map(item => ({ text: item.text }));
+                console.log('使用旧版newsMessages参数');
+            }
+        } catch (e) {
+            console.log('获取旧版newsMessages参数失败:', e instanceof Error ? e.message : String(e));
+        }
         
         // 转换为OneBot API所需的格式
         const messages = forwardMessages.messages.map(msg => {
-            // 默认使用空内容
-            let content: any = '';
+            // 检查是否有自定义内容
+            let content: any = msg.content || '';
             
             // 检查是否需要添加图片
             if (msg.addImage) {
@@ -221,12 +233,17 @@ async function handlePrivateMessage(
         if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
         if (forwardSettings.source) body.source = forwardSettings.source;
         
-        // 添加文本内容
-        if (newsMessages.news && newsMessages.news.length > 0) {
-            body.news = newsMessages.news.map(item => ({ text: item.text }));
+        // 添加文本内容 - 优先使用forwardSettings.news参数
+        if (forwardSettings.news) {
+            body.news = [{ text: forwardSettings.news }];
+            console.log(`使用forwardSettings.news参数: ${forwardSettings.news}`);
+        } else if (newsItems.length > 0) {
+            // 兼容旧版格式
+            body.news = newsItems;
+            console.log(`使用旧版newsMessages参数，包含${newsItems.length}条内容`);
         } else {
             // 确保始终有news字段，即使没有设置
-            body.news = [{ text: "不许点进来！" }];
+            body.news = [{ text: "查看详细内容" }];
         }
         
         endpoint = 'send_private_forward_msg';
@@ -318,8 +335,29 @@ async function handleGroupMessage(
     this: IExecuteFunctions,
     index: number,
 ): Promise<INodeExecutionData> {
+    try {
+        // 添加MessageItem类型定义
+        type MessageItem = {
+            user_id: string;
+            nickname: string;
+            addImage: boolean;
+            imageSource?: string;
+            imageUrl?: string;
+            imagePath?: string;
+            imageBase64?: string;
+            content?: string;  // 添加content属性
+        };
+        
     // 获取群ID
-    const groupId = this.getNodeParameter('group_id', index);
+        let groupId;
+        try {
+            groupId = this.getNodeParameter('group_id', index);
+            console.log(`成功获取群ID: ${groupId}`);
+        } catch (error) {
+            console.error('获取群ID参数失败:', error instanceof Error ? error.message : String(error));
+            throw new Error('发送群消息失败: 无法获取群ID参数');
+        }
+        
     if (!groupId) {
         throw new Error('发送群消息需要有效的群ID，但未提供');
     }
@@ -328,35 +366,181 @@ async function handleGroupMessage(
     let endpoint: string = '';
 
     // 检查是否使用转发模式
-    const groupForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
+        let groupForwardMode = false;
+        try {
+            groupForwardMode = this.getNodeParameter('forward_mode', index, false) as boolean;
+            console.log(`转发模式: ${groupForwardMode ? '启用' : '禁用'}`);
+        } catch (error) {
+            console.error('获取转发模式参数失败:', error instanceof Error ? error.message : String(error));
+            // 默认禁用转发模式
+            groupForwardMode = false;
+        }
     
     if (groupForwardMode) {
         // 使用转发消息格式
-        const forwardMessages = this.getNodeParameter('forwardMessages', index) as {
-            messages: Array<{
-                user_id: string;
-                nickname: string;
-                addImage: boolean;
-                imageSource?: string;
-                imageUrl?: string;
-                imagePath?: string;
-                imageBase64?: string;
-            }>;
-        };
+            let forwardMessages: {
+                messages: Array<MessageItem>
+            } = { messages: [] };
+            try {
+                forwardMessages = this.getNodeParameter('forwardMessages', index) as {
+                    messages: Array<MessageItem>;
+                };
+                console.log(`获取到转发消息列表，包含${forwardMessages.messages.length}条消息`);
+            } catch (error) {
+                console.error('获取转发消息列表参数失败:', error instanceof Error ? error.message : String(error));
+                console.log('将根据输入数据自动创建转发消息');
+                
+                // 自动创建转发消息 - 使用机器人的登录信息
+                try {
+                    // 获取机器人信息
+                    const loginInfoResponse = await apiRequest.call(this, 'GET', 'get_login_info');
+                    if (loginInfoResponse && loginInfoResponse.data) {
+                        const botInfo = loginInfoResponse.data;
+                        
+                        // 尝试从输入数据获取消息内容
+                        let content = '';
+                        let hasImage = false;
+                        let imageUrl = '';
+                        
+                        try {
+                            const inputData = this.getInputData();
+                            if (inputData && inputData[index]) {
+                                // 检查是否有文本内容
+                                const jsonData = inputData[index].json;
+                                if (jsonData) {
+                                    if (typeof jsonData.message === 'string') {
+                                        content = jsonData.message;
+                                    } else if (typeof jsonData.text === 'string') {
+                                        content = jsonData.text;
+                                    } else if (typeof jsonData.content === 'string') {
+                                        content = jsonData.content;
+                                    } else if (typeof jsonData.data === 'string') {
+                                        content = jsonData.data;
+                                    } else if (jsonData.message !== undefined) {
+                                        content = String(jsonData.message);
+                                    } else if (jsonData.text !== undefined) {
+                                        content = String(jsonData.text);
+                                    } else if (jsonData.content !== undefined) {
+                                        content = String(jsonData.content);
+                                    } else if (jsonData.data !== undefined) {
+                                        content = String(jsonData.data);
+                                    }
+                                    
+                                    // 检查是否有图片URL
+                                    if (typeof jsonData.imageUrl === 'string') {
+                                        imageUrl = jsonData.imageUrl;
+                                        hasImage = true;
+                                    } else if (typeof jsonData.url === 'string' && 
+                                              (jsonData.url.endsWith('.jpg') || 
+                                               jsonData.url.endsWith('.jpeg') || 
+                                               jsonData.url.endsWith('.png') || 
+                                               jsonData.url.endsWith('.gif'))) {
+                                        imageUrl = jsonData.url;
+                                        hasImage = true;
+                                    }
+                                }
+                                
+                                // 检查是否有二进制数据（图片）
+                                if (inputData[index].binary && typeof inputData[index].binary === 'object') {
+                                    const binaryData = inputData[index].binary as Record<string, any>;
+                                    if (binaryData && Object.keys(binaryData).length > 0) {
+                                        for (const binaryPropertyName of Object.keys(binaryData)) {
+                                            const binaryProperty = binaryData[binaryPropertyName];
+                                            if (binaryProperty && binaryProperty.mimeType && binaryProperty.mimeType.startsWith('image/')) {
+                                            // 使用base64图片
+                                            imageUrl = `base64://${binaryProperty.data}`;
+                                            hasImage = true;
+                                            break;
+                                        }
+                                    }
+                                    }
+                                }
+                            }
+                        } catch (inputError) {
+                            console.error('从输入数据获取内容失败:', inputError instanceof Error ? inputError.message : String(inputError));
+                        }
+                        
+                        // 如果都没有内容，提供默认值
+                        if (!content && !hasImage) {
+                            content = '转发的消息';
+                        }
+                        
+                                            // 创建一个简单的转发消息
+                    forwardMessages = {
+                        messages: [
+                            {
+                                user_id: botInfo.user_id.toString(),
+                                nickname: botInfo.nickname || '机器人',
+                                addImage: hasImage,
+                                imageSource: hasImage ? (imageUrl.startsWith('base64://') ? 'base64' : 'url') : undefined,
+                                imageUrl: hasImage && !imageUrl.startsWith('base64://') ? imageUrl : undefined,
+                                imageBase64: hasImage && imageUrl.startsWith('base64://') ? imageUrl.replace('base64://', '') : undefined,
+                                content: content || '转发的消息' // 确保有内容
+                            }
+                        ]
+                    };
+                        
+                        console.log('自动创建了转发消息，使用机器人信息');
+                    } else {
+                        console.error('无法获取机器人信息，使用默认值');
+                        forwardMessages = {
+                            messages: [
+                                {
+                                    user_id: '10000',
+                                    nickname: '机器人',
+                                    addImage: false,
+                                    content: '转发的消息' // 确保有内容
+                                }
+                            ]
+                        };
+                    }
+                } catch (botInfoError) {
+                    console.error('获取机器人信息失败:', botInfoError instanceof Error ? botInfoError.message : String(botInfoError));
+                    // 创建一个简单的默认转发消息
+                    forwardMessages = {
+                        messages: [
+                            {
+                                user_id: '10000',
+                                nickname: '机器人',
+                                addImage: false,
+                                content: '转发的消息' // 确保有内容
+                            }
+                        ]
+                    };
+                }
+            }
         
         // 获取转发消息设置
-        const forwardSettings = this.getNodeParameter('forwardSettings', index, {}) as {
+            let forwardSettings = {};
+            try {
+                forwardSettings = this.getNodeParameter('forwardSettings', index, {}) as {
             summary?: string;
             source?: string;
             prompt?: string;
+                    news?: string;
         };
+                console.log('成功获取转发设置参数');
+            } catch (error) {
+                console.error('获取转发设置参数失败:', error instanceof Error ? error.message : String(error));
+                forwardSettings = {};
+            }
         
         // 获取文本内容
+            let newsItems: Array<{ text: string }> = [];
+            try {
         const newsMessages = this.getNodeParameter('newsMessages', index, { news: [] }) as {
             news: Array<{
                 text: string;
             }>;
         };
+                
+                if (newsMessages.news && newsMessages.news.length > 0) {
+                    newsItems = newsMessages.news.map(item => ({ text: item.text }));
+                    console.log('使用旧版newsMessages参数');
+                }
+            } catch (error) {
+                console.log('获取旧版newsMessages参数失败:', error instanceof Error ? error.message : String(error));
+            }
         
         // 转换为OneBot API所需的格式
         const messages = forwardMessages.messages.map(msg => {
@@ -418,23 +602,60 @@ async function handleGroupMessage(
         body.messages = messages;
         
         // 添加摘要、提示和来源
-        if (forwardSettings.summary) body.summary = forwardSettings.summary;
-        if (forwardSettings.prompt) body.prompt = forwardSettings.prompt;
-        if (forwardSettings.source) body.source = forwardSettings.source;
-        
-        // 添加文本内容
-        if (newsMessages.news && newsMessages.news.length > 0) {
-            body.news = newsMessages.news.map(item => ({ text: item.text }));
+            if ((forwardSettings as any).summary) body.summary = (forwardSettings as any).summary;
+            if ((forwardSettings as any).prompt) body.prompt = (forwardSettings as any).prompt;
+            if ((forwardSettings as any).source) body.source = (forwardSettings as any).source;
+            
+            // 添加文本内容 - 优先使用forwardSettings.news参数
+            if ((forwardSettings as any).news) {
+                body.news = [{ text: (forwardSettings as any).news }];
+                console.log(`使用forwardSettings.news参数: ${(forwardSettings as any).news}`);
+            } else if (newsItems.length > 0) {
+                // 兼容旧版格式
+                body.news = newsItems;
+                console.log(`使用旧版newsMessages参数，包含${newsItems.length}条内容`);
         } else {
             // 确保始终有news字段，即使没有设置
-            body.news = [{ text: "不许点进来！" }];
+                body.news = [{ text: "查看详细内容" }];
         }
         
         endpoint = 'send_group_forward_msg';
         console.log('send_group_forward_msg参数:', JSON.stringify(body));
     } else {
         // 获取消息内容
-        let messageContent = this.getNodeParameter('message', index) as string;
+            let messageContent = '';
+            try {
+                messageContent = this.getNodeParameter('message', index) as string;
+                console.log('成功获取消息内容参数');
+            } catch (error) {
+                console.error('获取消息内容参数失败:', error instanceof Error ? error.message : String(error));
+                // 如果获取消息参数失败，尝试从输入数据中获取
+                try {
+                    const inputData = this.getInputData();
+                    if (inputData && inputData[index] && inputData[index].json) {
+                        const jsonData = inputData[index].json;
+                        if (typeof jsonData.message === 'string') {
+                            messageContent = jsonData.message;
+                            console.log('从输入数据中获取消息内容');
+                        } else if (typeof jsonData.text === 'string') {
+                            messageContent = jsonData.text;
+                            console.log('从输入数据text字段获取消息内容');
+                        } else if (typeof jsonData.content === 'string') {
+                            messageContent = jsonData.content;
+                            console.log('从输入数据content字段获取消息内容');
+                        } else {
+                            messageContent = '消息内容为空';
+                            console.log('无法获取消息内容，使用默认值');
+                        }
+                    } else {
+                        messageContent = '消息内容为空';
+                        console.log('输入数据为空，使用默认消息内容');
+                    }
+                } catch (inputError) {
+                    console.error('尝试从输入数据获取消息内容失败:', inputError instanceof Error ? inputError.message : String(inputError));
+                    messageContent = '消息内容为空';
+                }
+            }
 
         // 获取"自动检测Base64数据"选项，默认为false（不启用自动检测）
         const autoDetectBase64 = false; // 默认不启用自动检测
@@ -443,47 +664,108 @@ async function handleGroupMessage(
         messageContent = detectAndProcessBase64InMessage(messageContent, autoDetectBase64);
 
         // 检查是否需要@全体成员
-        const atAll = this.getNodeParameter('atAll', index, false) as boolean;
+            let atAll = false;
+            try {
+                atAll = this.getNodeParameter('atAll', index, false) as boolean;
+                console.log(`@全体成员: ${atAll ? '是' : '否'}`);
+            } catch (error) {
+                console.error('获取@全体成员参数失败:', error instanceof Error ? error.message : String(error));
+                atAll = false;
+            }
+            
         if (atAll) {
             // 在消息前添加@全体成员CQ码
             messageContent = '[CQ:at,qq=all] ' + messageContent;
         }
 
         // 检查是否需要@特定成员
-        const atUser = this.getNodeParameter('atUser', index, false) as boolean;
+            let atUser = false;
+            try {
+                atUser = this.getNodeParameter('atUser', index, false) as boolean;
+                console.log(`@特定成员: ${atUser ? '是' : '否'}`);
+            } catch (error) {
+                console.error('获取@特定成员参数失败:', error instanceof Error ? error.message : String(error));
+                atUser = false;
+            }
+            
         if (atUser) {
-            const atUserId = this.getNodeParameter('atUserId', index) as string;
+                let atUserId = '';
+                try {
+                    atUserId = this.getNodeParameter('atUserId', index) as string;
+                    console.log(`@用户ID: ${atUserId}`);
+                } catch (error) {
+                    console.error('获取@用户ID参数失败:', error instanceof Error ? error.message : String(error));
+                    atUserId = '';
+                }
+                
+                if (atUserId) {
             messageContent = `[CQ:at,qq=${atUserId}] ${messageContent}`;
+                }
         }
 
         // 检查是否需要发送图片
-        const sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
-        if (sendImage) {
+            let sendImage = false;
+            try {
+                sendImage = this.getNodeParameter('sendImage', index, false) as boolean;
+                console.log(`发送图片: ${sendImage ? '是' : '否'}`);
+            } catch (error) {
+                console.error('获取发送图片参数失败:', error instanceof Error ? error.message : String(error));
+                sendImage = false;
+            }
+            
+            if (sendImage) {
             try {
                 console.log(`[群聊消息] 发送图片标志为true，开始处理图片`);
                 // 使用默认值'url'，确保即使获取不到也有默认值
-                const imageSource = this.getNodeParameter('imageSource', index, 'url') as string;
+                    let imageSource = 'url';
+                    try {
+                        imageSource = this.getNodeParameter('imageSource', index, 'url') as string;
                 console.log(`[群聊消息] 图片来源: ${imageSource}`);
+                    } catch (error) {
+                        console.error('获取图片来源参数失败:', error instanceof Error ? error.message : String(error));
+                        imageSource = 'url';
+                    }
+                    
                 let imagePath = '';
 
                 if (imageSource === 'url') {
+                        try {
                     imagePath = this.getNodeParameter('imageUrl', index, '') as string;
                     console.log(`[群聊消息] 图片URL: ${imagePath}`);
+                        } catch (error) {
+                            console.error('获取图片URL参数失败:', error instanceof Error ? error.message : String(error));
+                            imagePath = '';
+                        }
                 } else if (imageSource === 'file') {
                     // 本地文件需要添加file://前缀
-                    const filePath = this.getNodeParameter('imagePath', index, '') as string;
+                        let filePath = '';
+                        try {
+                            filePath = this.getNodeParameter('imagePath', index, '') as string;
                     console.log(`[群聊消息] 本地图片路径: ${filePath}`);
+                        } catch (error) {
+                            console.error('获取本地图片路径参数失败:', error instanceof Error ? error.message : String(error));
+                            filePath = '';
+                        }
                     imagePath = filePath ? 'file://' + filePath : '';
                 } else if (imageSource === 'base64') {
                     // 处理Base64编码
                     try {
-                        const base64Data = this.getNodeParameter('imageBase64', index, '') as string;
+                            let base64Data = '';
+                            try {
+                                base64Data = this.getNodeParameter('imageBase64', index, '') as string;
                         console.log(`[群聊消息] Base64图片数据长度: ${base64Data.length}`);
+                            } catch (error) {
+                                console.error('获取Base64图片数据参数失败:', error instanceof Error ? error.message : String(error));
+                                base64Data = '';
+                            }
+                            
+                            if (base64Data && base64Data.trim() !== '') {
                         imagePath = processBase64Image(base64Data);
+                            }
                     } catch (e) {
                         console.error('[群聊消息] 处理Base64图片失败:', e instanceof Error ? e.message : String(e));
-                        throw e; // 将错误向上传递
-                    }
+                            // 但不抛出错误中断流程
+                        }
                 }
 
                 // 只有当图片路径不为空时才添加图片
@@ -511,9 +793,9 @@ async function handleGroupMessage(
                     console.log('[群聊消息] 图片路径为空，跳过添加图片CQ码');
                 }
             } catch (error) {
-                console.error('[群聊消息] 处理群聊图片时出错:', error instanceof Error ? error.message : String(error));
-                throw error; // 将错误向上传递
-            }
+                    console.error('[群聊消息] 处理群聊图片时出错，但继续执行:', error instanceof Error ? error.message : String(error));
+                    // 这里不再抛出错误，而是继续发送文本消息
+                }
         }
 
         body.message = messageContent;
@@ -534,5 +816,9 @@ async function handleGroupMessage(
             throw new Error(`发送群消息失败: 请求超时。请求未成功完成，消息未发送。请检查网络连接和服务器状态后重试。`);
         }
         throw error;
+        }
+    } catch (outerError) {
+        console.error('执行群聊消息操作时出错:', outerError instanceof Error ? outerError.message : String(outerError));
+        throw outerError;
     }
 } 
