@@ -226,6 +226,12 @@ export class OneBot implements INodeType {
 						action: 'Batch operation',
 						description: '批量退群和删除好友，支持白名单',
 					},
+					{
+						name: '随机删除好友',
+						value: 'random_delete_friends',
+						action: 'Random delete friends',
+						description: '随机删除指定数量范围内的好友，支持白名单',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -887,6 +893,51 @@ export class OneBot implements INodeType {
 					},
 				},
 				description: 'Whether to dismiss groups when leaving (if you are the owner)',
+			},
+			// 随机删除好友的参数
+			{
+				displayName: '最大删除数量',
+				name: 'max_friends_to_delete',
+				type: 'number',
+				default: 5,
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['random_delete_friends'],
+						resource: ['member'],
+					},
+				},
+				description: '设置随机删除好友的最大数量，实际删除数量为1到此数字之间的随机值',
+			},
+			{
+				displayName: '使用白名单',
+				name: 'use_whitelist_random',
+				type: 'boolean',
+				default: true,
+				displayOptions: {
+					show: {
+						operation: ['random_delete_friends'],
+						resource: ['member'],
+					},
+				},
+				description: 'Whether to use whitelist to exclude certain friends from random deletion',
+			},
+			{
+				displayName: '好友 Names or IDs',
+				name: 'whitelist_friends_random',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getFriendList',
+				},
+				default: [],
+				displayOptions: {
+					show: {
+						operation: ['random_delete_friends'],
+						resource: ['member'],
+						use_whitelist_random: [true],
+					},
+				},
+				description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 			},
 		],
 	};

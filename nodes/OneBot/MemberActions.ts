@@ -64,6 +64,11 @@ export async function executeMemberOperation(this: IExecuteFunctions, index: num
 
       return responseData;
 
+    case 'random_delete_friends':
+      // 随机删除好友
+      const randomResponse = await handleRandomFriendDelete.call(this, index);
+      return randomResponse;
+
     default:
       throw new Error(`未知的成员关系操作: ${operation}`);
   }
@@ -204,4 +209,105 @@ async function handleFriends(this: IExecuteFunctions, index: number, useWhitelis
     successFriends,
     failedFriends
   };
+}
+
+/**
+ * 随机删除指定数量的好友，支持白名单
+ */
+async function handleRandomFriendDelete(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+  // 获取参数
+  const maxFriendsToDelete = this.getNodeParameter('max_friends_to_delete', index) as number;
+  const useWhitelist = this.getNodeParameter('use_whitelist_random', index, false) as boolean;
+
+  // 获取所有好友
+  const friendListResponse = await apiRequest.call(this, 'GET', 'get_friend_list') as {
+    data?: {
+      user_id: number;
+      nickname: string;
+      remark?: string;
+    }[];
+  };
+
+  if (!friendListResponse?.data || !Array.isArray(friendListResponse.data) || friendListResponse.data.length === 0) {
+    return { success: false, message: '获取好友列表失败或没有好友' };
+  }
+
+  const allFriends = friendListResponse.data;
+  console.log(`获取到 ${allFriends.length} 个好友`);
+
+  // 处理白名单
+  let friendsPool = [...allFriends];
+  if (useWhitelist) {
+    const whitelistFriends = this.getNodeParameter('whitelist_friends_random', index, []) as string[];
+    if (whitelistFriends.length > 0) {
+      // 将字符串ID转为数字进行比较
+      const whitelistFriendIds = whitelistFriends.map(id => parseInt(id.toString(), 10));
+      friendsPool = allFriends.filter(friend => !whitelistFriendIds.includes(friend.user_id));
+      console.log(`白名单好友数: ${whitelistFriends.length}, 可随机删除的好友数: ${friendsPool.length}`);
+    }
+  }
+
+  // 确定要删除的好友数量（1到maxFriendsToDelete之间的随机数）
+  // 如果maxFriendsToDelete大于可用好友池，则使用可用好友池的大小
+  const availableFriendsCount = friendsPool.length;
+  if (availableFriendsCount === 0) {
+    return { success: false, message: '没有可删除的好友（所有好友都在白名单中）' };
+  }
+
+  // 生成1到maxFriendsToDelete之间的随机数，但不超过可用好友数
+  const actualMaxToDelete = Math.min(maxFriendsToDelete, availableFriendsCount);
+  const friendsToDeleteCount = Math.floor(Math.random() * actualMaxToDelete) + 1; // 至少删除1个
+
+  console.log(`将随机删除 ${friendsToDeleteCount} 个好友（最大允许: ${actualMaxToDelete}）`);
+
+  // 随机选择要删除的好友
+  const shuffledFriends = shuffleArray([...friendsPool]);
+  const friendsToDelete = shuffledFriends.slice(0, friendsToDeleteCount);
+
+  // 执行删除操作
+  const successFriends: Array<{id: number, name: string}> = [];
+  const failedFriends: Array<{id: number, name: string, error: string}> = [];
+
+  for (const friend of friendsToDelete) {
+    try {
+      await apiRequest.call(this, 'POST', 'delete_friend', {
+        user_id: friend.user_id
+      });
+      successFriends.push({
+        id: friend.user_id,
+        name: friend.remark || friend.nickname
+      });
+    } catch (error) {
+      failedFriends.push({
+        id: friend.user_id,
+        name: friend.remark || friend.nickname,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+
+    // 添加延时，避免请求过快
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  return {
+    success: true,
+    requestedMax: maxFriendsToDelete,
+    randomlyChosen: friendsToDeleteCount,
+    processed: successFriends.length,
+    failed: failedFriends.length,
+    successFriends,
+    failedFriends
+  };
+}
+
+/**
+ * 打乱数组顺序（Fisher-Yates洗牌算法）
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
