@@ -42,3 +42,4 @@ export class OneBotApi implements ICredentialType {
 		},
 	};
 }
+
