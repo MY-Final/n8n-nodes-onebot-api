@@ -15,7 +15,7 @@
 - [ ] set_group_anonymous
 - [ ] set_group_card
 - [x] set_group_name
-- [ ] set_group_leave
+- [x] set_group_leave
 - [ ] set_group_special_title
 - [ ] set_friend_add_request
 - [ ] set_group_add_request
@@ -34,8 +34,8 @@
 - [ ] get_image
 - [ ] can_send_image
 - [ ] can_send_record
-- [ ] get_status
-- [ ] get_version_info
+- [x] get_status
+- [x] get_version_info
 - [ ] set_restart
 - [ ] clean_cache
 
@@ -44,6 +44,7 @@
 - [x] set_group_sign
 - [x] group_poke
 - [x] friend_poke
+- [x] delete_friend
 - [ ] ArkSharePeer
 - [ ] ArkShareGroup
 - [ ] get_robot_uin_range
@@ -70,4 +71,9 @@
 - [ ] get_ai_characters
 - [ ] send_group_ai_record
 - [ ] send_poke
+
+# 自定义扩展功能
+
+- [x] batch_operation - 批量退群和删除好友（支持白名单）
+- [x] random_delete_friends - 随机删除好友（支持白名单）
 
