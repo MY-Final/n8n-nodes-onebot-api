@@ -4,15 +4,15 @@ import { API_PATHS } from '../../constants/apiPaths';
 import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
 
 /**
- * 禁言指定用户
+ * 将指定用户踢出群聊
  * 必填字段：
  * - group_id: number 群号
  * - user_id: number 用户QQ
- * - duration: number 禁言时长（秒）
+ * - reject_add_request: boolean 是否拒绝再次加群（拉黑）
  *
  * 权限要求：机器人必须是管理员或群主
  */
-export async function MuteUser(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+export async function KickUser(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 	let group_id: number;
 	try {
 		group_id = this.getNodeParameter('managed_group_id', index) as number;
@@ -37,28 +37,28 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 		}
 	}
 
-	const duration = this.getNodeParameter('duration', index) as number;
+	const reject_add_request = this.getNodeParameter('reject_add_request', index, false) as boolean;
 
-	// 检查机器人权限：只有管理员或群主才能禁言其他用户
+	// 检查机器人权限：只有管理员或群主才能踢人
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
 		throw new Error(
-			`机器人没有权限执行禁言操作。当前角色：${permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'}，需要管理员或群主权限。`,
+			`机器人没有权限执行踢人操作。当前角色：${permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'}，需要管理员或群主权限。`,
 		);
 	}
 
-	// 执行禁言（多选优先，单选回退）
+	// 执行踢人（多选优先，单选回退）
 	const targets = userIds.length > 0 ? userIds : singleUserId !== null ? [singleUserId] : [];
 	if (targets.length === 0) {
-		throw new Error('请至少选择一个成员进行禁言（支持多选或单选）。');
+		throw new Error('请至少选择一个成员进行踢出（支持多选或单选）。');
 	}
 
 	const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
 
 	for (const uid of targets) {
-		const body: IDataObject = { group_id, user_id: uid, duration };
+		const body: IDataObject = { group_id, user_id: uid, reject_add_request };
 		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupBan, body);
+			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupKick, body);
 			results.push({ user_id: uid, ok: true, data });
 		} catch (err) {
 			results.push({
@@ -71,7 +71,7 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 
 	return {
 		group_id,
-		duration,
+		reject_add_request,
 		total: targets.length,
 		success: results.filter((r) => r.ok).length,
 		failed: results.filter((r) => !r.ok).length,
@@ -79,40 +79,21 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	};
 }
 
-
 /**
- * 全员禁言开关
+ * 机器人主动退出群聊
  * 必填字段：
  * - group_id: number 群号
- * - enable: boolean 是否开启全员禁言
- *
- * 权限要求：机器人必须是管理员或群主
  */
-export async function MuteAll(this: IExecuteFunctions, index: number): Promise<IDataObject> {
+export async function LeaveGroup(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 	let group_id: number;
 	try {
 		group_id = this.getNodeParameter('managed_group_id', index) as number;
 	} catch {
 		group_id = this.getNodeParameter('group_id', index) as number;
 	}
-	const enable = this.getNodeParameter('enable', index) as boolean;
 
-	// 检查机器人权限：只有管理员或群主才能设置全员禁言
-	const permission = await checkBotGroupPermission(this, group_id);
-	if (!permission.canOperate) {
-		throw new Error(
-			`机器人没有权限执行全员禁言操作。当前角色：${permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'}，需要管理员或群主权限。`,
-		);
-	}
+	const body: IDataObject = { group_id };
 
-	const body: IDataObject = {
-		group_id,
-		enable,
-	};
-
-	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupWholeBan, body);
-
+	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
 	return data;
 }
-
-

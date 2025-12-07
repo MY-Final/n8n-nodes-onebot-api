@@ -26,4 +26,13 @@ export const API_PATHS = {
 
 	// 全体禁言
 	setGroupWholeBan: 'set_group_whole_ban',
+
+	// 群踢人
+	setGroupKick: 'set_group_kick',
+
+	// 退群
+	setGroupLeave: 'set_group_leave',
+
+	// 删除好友
+	deleteFriend: 'delete_friend'
 };

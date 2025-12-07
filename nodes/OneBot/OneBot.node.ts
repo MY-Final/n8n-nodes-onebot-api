@@ -14,6 +14,7 @@ import { sendLike } from './action/interactive/SendLike';
 import { SendPoke } from './action/interactive/SendPoke';
 import { MuteUser, MuteAll } from './action/group-managements/Mute';
 import { getManagedGroupList, getOwnedGroupList } from '../utils/ManagedGroupUtils';
+import { KickUser, LeaveGroup } from './action/group-managements/Kick';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -160,6 +161,16 @@ export class OneBot implements INodeType {
 						value: 'send_poke',
 						action: 'Send poke',
 					},
+					{
+						name: 'Leave Group',
+						value: 'group_leave',
+						action: 'Leave Group',
+					},
+					{
+						name: 'Kick User',
+						value: 'kick_user',
+						action: 'Kick User',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -250,13 +261,12 @@ export class OneBot implements INodeType {
 							'get_group_member_list',
 							'get_group_member_info',
 							'send_poke',
-							// 从这里移除 'mute_user', 'mute_all'
+							'group_leave',
 						],
 						resource: ['group'],
 					},
 				},
 			},
-			// 新增：仅在禁言相关操作显示的群选择（数据源为 getManagedGroupList）
 			{
 				displayName: 'Managed Group Name or ID',
 				name: 'managed_group_id',
@@ -269,11 +279,12 @@ export class OneBot implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['mute_user', 'mute_all'],
+						operation: ['mute_user', 'mute_all', 'kick_user'],
 						resource: ['group'],
 					},
 				},
 			},
+			// 可以选择单个选项
 			{
 				displayName: 'Member Name or ID',
 				name: 'user_id',
@@ -282,14 +293,47 @@ export class OneBot implements INodeType {
 					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupMemberList',
-					// 增加 managed_group_id 作为依赖，以便禁言场景也能加载成员列表
 					loadOptionsDependsOn: ['group_id', 'managed_group_id'],
 				},
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['get_group_member_info', 'send_poke', 'mute_user'],
+						operation: ['get_group_member_info', 'send_poke'],
 						resource: ['group'],
+					},
+				},
+			},
+			// 可以选择多个选项
+			{
+				displayName: 'Member Names or IDs',
+				name: 'user_ids',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupMemberList',
+					// 让成员加载在禁言/踢人场景下同时依赖 managed_group_id 或 group_id
+					loadOptionsDependsOn: ['group_id', 'managed_group_id'],
+				},
+				default: [],
+				description:
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+				required: false,
+				displayOptions: {
+					show: {
+						operation: ['mute_user', 'kick_user'],
+						resource: ['group'],
+					},
+				},
+			},
+			{
+				displayName: 'Reject Add Request',
+				name: 'reject_add_request',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to reject the kicked user from rejoining the group',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['kick_user'],
 					},
 				},
 			},
@@ -438,6 +482,10 @@ export class OneBot implements INodeType {
 				data = await MuteUser.call(this, index);
 			} else if (action.operation === 'mute_all') {
 				data = await MuteAll.call(this, index);
+			} else if (action.operation === 'kick_user') {
+				data = await KickUser.call(this, index);
+			} else if (action.operation === 'group_leave') {
+				data = await LeaveGroup.call(this, index);
 			} else {
 				let body: IDataObject = {};
 				switch (action.operation) {
