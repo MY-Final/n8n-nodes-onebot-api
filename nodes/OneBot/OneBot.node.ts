@@ -10,6 +10,7 @@ import {
 import { apiRequest } from './GenericFunctions';
 import { LoginInfo, MessageAction, OneBotAction } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
+import { sendLike } from './action/sendLike';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -96,6 +97,11 @@ export class OneBot implements INodeType {
 						name: 'Get Stranger Info',
 						value: 'get_stranger_info',
 						action: 'Get stranger info',
+					},
+					{
+						name: 'Send Like',
+						value: 'send_like',
+						action: 'Send like',
 					},
 				],
 				displayOptions: {
@@ -198,7 +204,7 @@ export class OneBot implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['send_private_msg', 'get_stranger_info'],
+						operation: ['send_private_msg', 'get_stranger_info', 'send_like'],
 					},
 				},
 			},
@@ -251,6 +257,23 @@ export class OneBot implements INodeType {
 					show: {
 						resource: ['message'],
 						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: 'Times',
+				name: 'times',
+				type: 'number',
+				typeOptions: {
+					minValue: 1,
+					numberStepSize: 1,
+				},
+				default: 1,
+				description: '点赞次数',
+				displayOptions: {
+					show: {
+						resource: ['friend'],
+						operation: ['send_like'],
 					},
 				},
 			},
@@ -326,29 +349,34 @@ export class OneBot implements INodeType {
 			const operation = this.getNodeParameter('operation', index);
 			const action = { resource, operation } as OneBotAction;
 
-			let body: IDataObject = {};
-			switch (action.operation) {
-				case 'send_private_msg':
-					body.message = this.getNodeParameter('message', index) as string;
-				case 'get_stranger_info':
-					body.user_id = this.getNodeParameter('user_id', index) as number;
-					break;
+			let data: IDataObject;
+			if (action.operation === 'send_like') {
+				data = await sendLike.call(this, index);
+			} else {
+				let body: IDataObject = {};
+				switch (action.operation) {
+					case 'send_private_msg':
+						body.message = this.getNodeParameter('message', index) as string;
+					case 'get_stranger_info':
+						body.user_id = this.getNodeParameter('user_id', index) as number;
+						break;
 
-				case 'send_group_msg':
-					body.message = this.getNodeParameter('message', index) as string;
-				case 'get_group_member_list':
-				case 'get_group_info':
-					body.group_id = this.getNodeParameter('group_id', index) as number;
-					break;
+					case 'send_group_msg':
+						body.message = this.getNodeParameter('message', index) as string;
+					case 'get_group_member_list':
+					case 'get_group_info':
+						body.group_id = this.getNodeParameter('group_id', index) as number;
+						break;
 
-				case 'get_group_member_info':
-					body.group_id = this.getNodeParameter('group_id', index) as number;
-					body.user_id = this.getNodeParameter('user_id', index) as number;
-					break;
+					case 'get_group_member_info':
+						body.group_id = this.getNodeParameter('group_id', index) as number;
+						body.user_id = this.getNodeParameter('user_id', index) as number;
+						break;
+				}
+
+				const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
+				data = await apiRequest.call(this, method, action.operation, body);
 			}
-
-			const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
-			const data = await apiRequest.call(this, method, action.operation, body);
 			const json = this.helpers.returnJsonArray(data);
 			const executionData = this.helpers.constructExecutionMetaData(json, {
 				itemData: { item: index },

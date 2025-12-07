@@ -2,7 +2,7 @@ import { AllEntities, Entity, PropertiesOf } from 'n8n-workflow';
 
 export type OneBotMap = {
 	bot: 'get_login_info';
-	friend: 'get_stranger_info' | 'get_friend_list';
+	friend: 'get_stranger_info' | 'get_friend_list' | 'send_like';
 	group: 'get_group_info' | 'get_group_list' | 'get_group_member_info' | 'get_group_member_list';
 	message: 'send_group_msg' | 'send_private_msg';
 	misc: 'get_status' | 'get_version_info';
