@@ -15,6 +15,7 @@ import { SendPoke } from './action/interactive/SendPoke';
 import { MuteUser, MuteAll } from './action/group-managements/Mute';
 import { getManagedGroupList, getOwnedGroupList } from '../utils/ManagedGroupUtils';
 import { KickUser, LeaveGroup } from './action/group-managements/Kick';
+import { DeleteFriend } from './action/friend-managements/DeleFriend';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -61,10 +62,38 @@ export class OneBot implements INodeType {
 						value: 'message',
 					},
 					{
-						name: 'Misc',
-						value: 'misc',
+						name: 'Relationship',
+						value: 'relationship',
+					},
+					{
+						name: 'Other',
+						value: 'other',
 					},
 				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'get_status',
+				options: [
+					{
+						name: 'Get status',
+						value: 'get_status',
+						action: 'Get status',
+					},
+					{
+						name: 'Get version info',
+						value: 'get_version_info',
+						action: 'Get version info',
+					},
+				],
+				displayOptions: {
+					show: {
+						resource: ['other'],
+					},
+				},
 			},
 			{
 				displayName: 'Operation',
@@ -206,23 +235,61 @@ export class OneBot implements INodeType {
 				displayName: 'Operation',
 				name: 'operation',
 				type: 'options',
+				default: 'delete_friend',
 				noDataExpression: true,
-				default: 'get_status',
 				options: [
 					{
-						name: 'Get Status',
-						value: 'get_status',
-						action: 'Get status',
-					},
-					{
-						name: 'Get Version Info',
-						value: 'get_version_info',
-						action: 'Get version info',
+						name: 'Delete Friend',
+						value: 'delete_friend',
+						action: 'Delete friend',
 					},
 				],
 				displayOptions: {
 					show: {
-						resource: ['misc'],
+						resource: ['relationship'],
+					},
+				},
+			},
+			{
+				displayName: 'User Names or IDs',
+				name: 'user_ids',
+				type: 'multiOptions',
+				description:
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+				typeOptions: {
+					loadOptionsMethod: 'getFriendList',
+				},
+				default: [],
+				displayOptions: {
+					show: {
+						resource: ['relationship'],
+						operation: ['delete_friend'],
+					},
+				},
+			},
+			{
+				displayName: 'Temporary Block',
+				name: 'temp_block',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to also (temporarily) block the user when deleting',
+				displayOptions: {
+					show: {
+						resource: ['relationship'],
+						operation: ['delete_friend'],
+					},
+				},
+			},
+			{
+				displayName: 'Both-Side Delete',
+				name: 'temp_both_del',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to delete from both sides (remove yourself from the other’s list)',
+				displayOptions: {
+					show: {
+						resource: ['relationship'],
+						operation: ['delete_friend'],
 					},
 				},
 			},
@@ -486,6 +553,8 @@ export class OneBot implements INodeType {
 				data = await KickUser.call(this, index);
 			} else if (action.operation === 'group_leave') {
 				data = await LeaveGroup.call(this, index);
+			} else if (action.operation === 'delete_friend') {
+				data = await DeleteFriend.call(this, index);
 			} else {
 				let body: IDataObject = {};
 				switch (action.operation) {
