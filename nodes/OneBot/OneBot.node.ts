@@ -12,7 +12,8 @@ import { LoginInfo, MessageAction, OneBotAction } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
 import { sendLike } from './action/interactive/SendLike';
 import { SendPoke } from './action/interactive/SendPoke';
-import { MuteUser, MuteAll } from './action/group-managements/mute';
+import { MuteUser, MuteAll } from './action/group-managements/Mute';
+import { getManagedGroupList, getOwnedGroupList } from '../utils/ManagedGroupUtils';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -249,9 +250,26 @@ export class OneBot implements INodeType {
 							'get_group_member_list',
 							'get_group_member_info',
 							'send_poke',
-							'mute_user',
-							'mute_all',
+							// 从这里移除 'mute_user', 'mute_all'
 						],
+						resource: ['group'],
+					},
+				},
+			},
+			// 新增：仅在禁言相关操作显示的群选择（数据源为 getManagedGroupList）
+			{
+				displayName: 'Managed Group Name or ID',
+				name: 'managed_group_id',
+				type: 'options',
+				description:
+					'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression.',
+				typeOptions: {
+					loadOptionsMethod: 'getManagedGroupList',
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['mute_user', 'mute_all'],
 						resource: ['group'],
 					},
 				},
@@ -264,7 +282,8 @@ export class OneBot implements INodeType {
 					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupMemberList',
-					loadOptionsDependsOn: ['group_id'],
+					// 增加 managed_group_id 作为依赖，以便禁言场景也能加载成员列表
+					loadOptionsDependsOn: ['group_id', 'managed_group_id'],
 				},
 				default: '',
 				displayOptions: {
@@ -358,6 +377,8 @@ export class OneBot implements INodeType {
 			getFriendList,
 			getGroupList,
 			getGroupMemberList,
+			getManagedGroupList,
+			getOwnedGroupList,
 		},
 	};
 

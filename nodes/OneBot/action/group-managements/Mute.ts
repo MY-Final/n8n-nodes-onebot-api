@@ -13,7 +13,12 @@ import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
  * 权限要求：机器人必须是管理员或群主
  */
 export async function MuteUser(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const group_id = this.getNodeParameter('group_id', index) as number;
+	let group_id: number;
+	try {
+		group_id = this.getNodeParameter('managed_group_id', index) as number;
+	} catch {
+		group_id = this.getNodeParameter('group_id', index) as number;
+	}
 	const user_id = this.getNodeParameter('user_id', index) as number;
 	const duration = this.getNodeParameter('duration', index) as number;
 
@@ -46,7 +51,12 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
  * 权限要求：机器人必须是管理员或群主
  */
 export async function MuteAll(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const group_id = this.getNodeParameter('group_id', index) as number;
+	let group_id: number;
+	try {
+		group_id = this.getNodeParameter('managed_group_id', index) as number;
+	} catch {
+		group_id = this.getNodeParameter('group_id', index) as number;
+	}
 	const enable = this.getNodeParameter('enable', index) as boolean;
 
 	// 检查机器人权限：只有管理员或群主才能设置全员禁言

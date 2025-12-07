@@ -184,29 +184,31 @@ export async function getGroupMemberList(
 		// 更安全地获取group_id参数
 		let group_id;
 		try {
-			// 尝试获取group_id，可能会抛出异常
+			// 优先尝试 group_id
 			group_id = this.getNodeParameter('group_id');
 			console.log('获取到group_id:', group_id, '类型:', typeof group_id);
 		} catch (error) {
 			console.log('获取group_id失败:', error instanceof Error ? error.message : String(error));
-			// 捕获异常并返回提示信息
-			return [
-				{
-					name: '请先选择群组',
-					value: '',
-					description: '需要先在"Group Name or ID"字段中选择一个群组',
-				},
-			];
 		}
 
-		// 确保有效的群ID
+		// 如果没有取到 group_id，再尝试 managed_group_id（用于 mute_user 场景）
 		if (group_id === undefined || group_id === null || group_id === '') {
-			console.log('group_id无效或为空');
+			try {
+				group_id = this.getNodeParameter('managed_group_id');
+				console.log('fallback到managed_group_id:', group_id, '类型:', typeof group_id);
+			} catch (error) {
+				console.log('获取managed_group_id失败:', error instanceof Error ? error.message : String(error));
+			}
+		}
+
+		// 如果还是无效，返回提示
+		if (group_id === undefined || group_id === null || group_id === '') {
+			console.log('group_id或managed_group_id无效或为空');
 			return [
 				{
 					name: '请先选择群组',
 					value: '',
-					description: '需要先在"Group Name or ID"字段中选择一个群组',
+					description: '需要先选择一个群组',
 				},
 			];
 		}
