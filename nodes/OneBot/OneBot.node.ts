@@ -10,7 +10,8 @@ import {
 import { apiRequest } from './GenericFunctions';
 import { LoginInfo, MessageAction, OneBotAction } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
-import { sendLike } from './action/SendLike';
+import { sendLike } from './action/interactive/SendLike';
+import { SendPoke } from './action/interactive/SendPoke';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -103,6 +104,11 @@ export class OneBot implements INodeType {
 						value: 'send_like',
 						action: 'Send like',
 					},
+					{
+						name: 'Send Poke',
+						value: 'send_poke',
+						action: 'Send poke',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -136,6 +142,11 @@ export class OneBot implements INodeType {
 						name: 'Get Group Member List',
 						value: 'get_group_member_list',
 						action: 'Get group member list',
+					},
+					{
+						name: 'Send Poke',
+						value: 'send_poke',
+						action: 'Send poke',
 					},
 				],
 				displayOptions: {
@@ -204,7 +215,8 @@ export class OneBot implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['send_private_msg', 'get_stranger_info', 'send_like'],
+						operation: ['send_private_msg', 'get_stranger_info', 'send_like', 'send_poke'],
+						resource: ['friend'],
 					},
 				},
 			},
@@ -225,7 +237,9 @@ export class OneBot implements INodeType {
 							'get_group_info',
 							'get_group_member_list',
 							'get_group_member_info',
+							'send_poke',
 						],
+						resource: ['group'],
 					},
 				},
 			},
@@ -242,7 +256,8 @@ export class OneBot implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['get_group_member_info'],
+						operation: ['get_group_member_info', 'send_poke'],
+						resource: ['group'],
 					},
 				},
 			},
@@ -353,6 +368,8 @@ export class OneBot implements INodeType {
 			let data: IDataObject;
 			if (action.operation === 'send_like') {
 				data = await sendLike.call(this, index);
+			} else if (action.operation === 'send_poke') {
+				data = await SendPoke.call(this, index);
 			} else {
 				let body: IDataObject = {};
 				switch (action.operation) {
