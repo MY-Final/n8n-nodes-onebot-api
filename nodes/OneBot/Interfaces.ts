@@ -1,5 +1,10 @@
 import { AllEntities, Entity, PropertiesOf } from 'n8n-workflow';
 
+/**
+ * OneBot协议接口映射表
+ * 按功能模块分类定义OneBot支持的接口动作
+ * 键：功能模块名称，值：该模块下的具体接口动作名称联合类型
+ */
 export type OneBotMap = {
 	bot: 'get_login_info';
 	friend: 'get_stranger_info' | 'get_friend_list' | 'send_like';
@@ -8,6 +13,11 @@ export type OneBotMap = {
 	misc: 'get_status' | 'get_version_info';
 };
 
+/**
+ * 所有OneBot动作的联合类型
+ * 包含OneBotMap中所有模块下的所有接口动作名称
+ * 示例值：'get_login_info' | 'get_friend_list' | 'send_group_msg' 等
+ */
 export type OneBotAction = AllEntities<OneBotMap>;
 export type OneBotProperties = PropertiesOf<OneBotAction>;
 
@@ -26,6 +36,10 @@ export type GroupProperties = PropertiesOf<GroupAction>;
 export type MiscAction = Entity<OneBotMap, 'misc'>;
 export type MiscProperties = PropertiesOf<MiscAction>;
 
+/**
+ * 登录信息接口（get_login_info）的返回数据结构
+ * 对应OneBot协议中获取机器人登录信息的返回结果
+ */
 export interface LoginInfo {
 	user_id: number;
 	nickname: string;
