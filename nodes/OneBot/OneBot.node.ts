@@ -12,6 +12,7 @@ import { LoginInfo, MessageAction, OneBotAction } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
 import { sendLike } from './action/interactive/SendLike';
 import { SendPoke } from './action/interactive/SendPoke';
+import { MuteUser, MuteAll } from './action/group-managements/mute';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -144,6 +145,16 @@ export class OneBot implements INodeType {
 						action: 'Get group member list',
 					},
 					{
+						name: 'Mute All',
+						value: 'mute_all',
+						action: 'Mute all',
+					},
+					{
+						name: 'Mute User',
+						value: 'mute_user',
+						action: 'Mute user',
+					},
+					{
 						name: 'Send Poke',
 						value: 'send_poke',
 						action: 'Send poke',
@@ -238,6 +249,8 @@ export class OneBot implements INodeType {
 							'get_group_member_list',
 							'get_group_member_info',
 							'send_poke',
+							'mute_user',
+							'mute_all',
 						],
 						resource: ['group'],
 					},
@@ -256,7 +269,7 @@ export class OneBot implements INodeType {
 				default: '',
 				displayOptions: {
 					show: {
-						operation: ['get_group_member_info', 'send_poke'],
+						operation: ['get_group_member_info', 'send_poke', 'mute_user'],
 						resource: ['group'],
 					},
 				},
@@ -304,6 +317,36 @@ export class OneBot implements INodeType {
 					show: {
 						resource: ['message'],
 						operation: ['send_private_msg', 'send_group_msg'],
+					},
+				},
+			},
+			{
+				displayName: 'Duration (Seconds)',
+				name: 'duration',
+				type: 'number',
+				typeOptions: {
+					minValue: 0,
+					numberStepSize: 1,
+				},
+				default: 60,
+				description: '禁言时长（秒），0 表示解除禁言',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['mute_user'],
+					},
+				},
+			},
+			{
+				displayName: 'Enable',
+				name: 'enable',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to enable mute all',
+				displayOptions: {
+					show: {
+						resource: ['group'],
+						operation: ['mute_all'],
 					},
 				},
 			},
@@ -370,6 +413,10 @@ export class OneBot implements INodeType {
 				data = await sendLike.call(this, index);
 			} else if (action.operation === 'send_poke') {
 				data = await SendPoke.call(this, index);
+			} else if (action.operation === 'mute_user') {
+				data = await MuteUser.call(this, index);
+			} else if (action.operation === 'mute_all') {
+				data = await MuteAll.call(this, index);
 			} else {
 				let body: IDataObject = {};
 				switch (action.operation) {

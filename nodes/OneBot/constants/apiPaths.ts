@@ -15,4 +15,15 @@ export const API_PATHS = {
   // 点赞
   sendLike: 'send_like',
 
+	// 发送戳一戳
+	sendPoke: 'send_poke',
+
+	// 获取机器人在线状态
+	getLoginInfo : 'get_login_info',
+
+	// 群禁言
+	setGroupBan: 'set_group_ban',
+
+	// 全体禁言
+	setGroupWholeBan: 'set_group_whole_ban',
 };
