@@ -1,19 +1,25 @@
 {
-  "name": "n8n-nodes-onebot",
-  "version": "1.1.0",
-  "description": "OneBot node for n8n workflow, now you can send message to your QQ friend or group",
+  "name": "n8n-nodes-onebot-plus",
+  "version": "1.0.0",
+  "description": "OneBot node for n8n workflow",
   "keywords": [
-    "n8n-community-node-package"
+		"n8n-community-node-package",
+		"onebot",
+		"qq",
+		"bot",
+		"automation",
+		"messaging",
+		"qq-group-management"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/laxtiz/n8n-nodes-onebot",
+  "homepage": "https://github.com/MY-Final/n8n-nodes-onebot",
   "author": {
-    "name": "Zhong Liu",
-    "email": "laxtiz@live.com"
+    "name": "Final",
+    "email": "mydj666@qq.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/laxtiz/n8n-nodes-onebot.git"
+    "url": "https://github.com/MY-Final/n8n-nodes-onebot.git"
   },
   "main": "index.js",
   "scripts": {
