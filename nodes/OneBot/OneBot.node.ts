@@ -541,45 +541,63 @@ export class OneBot implements INodeType {
 			const action = { resource, operation } as OneBotAction;
 
 			let data: IDataObject;
-			if (action.operation === 'send_like') {
-				data = await sendLike.call(this, index);
-			} else if (action.operation === 'send_poke') {
-				data = await SendPoke.call(this, index);
-			} else if (action.operation === 'mute_user') {
-				data = await MuteUser.call(this, index);
-			} else if (action.operation === 'mute_all') {
-				data = await MuteAll.call(this, index);
-			} else if (action.operation === 'kick_user') {
-				data = await KickUser.call(this, index);
-			} else if (action.operation === 'group_leave') {
-				data = await LeaveGroup.call(this, index);
-			} else if (action.operation === 'delete_friend') {
-				data = await DeleteFriend.call(this, index);
-			} else {
-				let body: IDataObject = {};
-				switch (action.operation) {
-					case 'send_private_msg':
-						body.message = this.getNodeParameter('message', index) as string;
-					case 'get_stranger_info':
-						body.user_id = this.getNodeParameter('user_id', index) as number;
-						break;
+			switch (action.operation) {
+				case 'send_like':
+					data = await sendLike.call(this, index);
+					break;
 
-					case 'send_group_msg':
-						body.message = this.getNodeParameter('message', index) as string;
-					case 'get_group_member_list':
-					case 'get_group_info':
-						body.group_id = this.getNodeParameter('group_id', index) as number;
-						break;
+				case 'send_poke':
+					data = await SendPoke.call(this, index);
+					break;
 
-					case 'get_group_member_info':
-						body.group_id = this.getNodeParameter('group_id', index) as number;
-						body.user_id = this.getNodeParameter('user_id', index) as number;
-						break;
+				case 'mute_user':
+					data = await MuteUser.call(this, index);
+					break;
+
+				case 'mute_all':
+					data = await MuteAll.call(this, index);
+					break;
+
+				case 'kick_user':
+					data = await KickUser.call(this, index);
+					break;
+
+				case 'group_leave':
+					data = await LeaveGroup.call(this, index);
+					break;
+
+				case 'delete_friend':
+					data = await DeleteFriend.call(this, index);
+					break;
+
+				default: {
+					let body: IDataObject = {};
+					switch (action.operation) {
+						case 'send_private_msg':
+							body.message = this.getNodeParameter('message', index) as string;
+						case 'get_stranger_info':
+							body.user_id = this.getNodeParameter('user_id', index) as number;
+							break;
+
+						case 'send_group_msg':
+							body.message = this.getNodeParameter('message', index) as string;
+						case 'get_group_member_list':
+						case 'get_group_info':
+							body.group_id = this.getNodeParameter('group_id', index) as number;
+							break;
+
+						case 'get_group_member_info':
+							body.group_id = this.getNodeParameter('group_id', index) as number;
+							body.user_id = this.getNodeParameter('user_id', index) as number;
+							break;
+					}
+
+					const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
+					data = await apiRequest.call(this, method, action.operation, body);
+					break;
 				}
-
-				const method: IHttpRequestMethods = Object.keys(body).length == 0 ? 'GET' : 'POST';
-				data = await apiRequest.call(this, method, action.operation, body);
 			}
+
 			const json = this.helpers.returnJsonArray(data);
 			const executionData = this.helpers.constructExecutionMetaData(json, {
 				itemData: { item: index },
