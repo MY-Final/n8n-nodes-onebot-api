@@ -10,6 +10,7 @@ import {
 	processSearchAndFilter,
 	SearchableOption,
 } from '../utils/SearchUtils';
+import { API_PATHS } from './constants/apiPaths';
 
 /**
  * 获取好友列表
@@ -32,7 +33,7 @@ export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodeP
 		const hasSearch = hasSearchInput(currentInput);
 
 		// 获取好友列表
-		const response = await apiRequest.call(this, 'GET', 'get_friend_list');
+		const response = await apiRequest.call(this, 'POST', API_PATHS.getFriendList);
 		let friendData = [];
 
 		if (response && typeof response === 'object') {
@@ -112,7 +113,7 @@ export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePr
 		const hasSearch = hasSearchInput(currentInput);
 
 		// 获取群列表
-		const response = await apiRequest.call(this, 'GET', 'get_group_list');
+		const response = await apiRequest.call(this, 'POST', API_PATHS.getGroupList);
 		let groupData = [];
 
 		if (response && typeof response === 'object') {
@@ -226,7 +227,7 @@ export async function getGroupMemberList(
 		const query = { group_id };
 
 		// 使用标准apiRequest函数发送请求
-		const response = await apiRequest.call(this, 'GET', 'get_group_member_list', undefined, query);
+		const response = await apiRequest.call(this, 'POST', API_PATHS.getGroupMemberList, undefined, query);
 		console.log('API响应类型:', typeof response, '是否为数组:', Array.isArray(response));
 
 		// 处理不同响应格式：
