@@ -10,7 +10,7 @@ import {
 import { apiRequest } from './GenericFunctions';
 import { LoginInfo, MessageAction, OneBotAction } from './Interfaces';
 import { getFriendList, getGroupList, getGroupMemberList } from './SearchFunctions';
-import { sendLike } from './action/sendLike';
+import { sendLike } from './action/SendLike';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -237,6 +237,7 @@ export class OneBot implements INodeType {
 					'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 				typeOptions: {
 					loadOptionsMethod: 'getGroupMemberList',
+					loadOptionsDependsOn: ['group_id'],
 				},
 				default: '',
 				displayOptions: {
