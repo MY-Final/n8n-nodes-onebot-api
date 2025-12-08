@@ -37,5 +37,8 @@ export const API_PATHS = {
 	deleteFriend: 'delete_friend',
 
 	// 群打卡
-	sendGroupSign: 'set_group_sign'
+	sendGroupSign: 'set_group_sign',
+
+	// 设置管理员
+	setGroupAdmin: 'set_group_admin',
 };

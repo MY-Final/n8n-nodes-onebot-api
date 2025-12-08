@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
@@ -12,8 +12,7 @@ export async function sendGroupSign(this: IExecuteFunctions, index: number): Pro
 
 	const group_id = this.getNodeParameter('group_id', index) as number;
 	const body: IDataObject = { group_id };
+	return await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);
 
-	const data = await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);
-	return data;
 }
 

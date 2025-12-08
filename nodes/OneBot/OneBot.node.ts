@@ -17,6 +17,7 @@ import { getManagedGroupList, getOwnedGroupList } from '../utils/ManagedGroupUti
 import { KickUser, LeaveGroup } from './action/group-managements/Kick';
 import { DeleteFriend } from './action/friend-managements/DeleFriend';
 import { sendGroupSign } from './action/interactive/SendGroupSign';
+import { SetAdmin } from './action/group-managements/SetAdmin';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -210,6 +211,11 @@ export class OneBot implements INodeType {
 						value: 'send_group_sign',
 						action: 'Send group sign',
 					},
+					{
+						name: 'Set Admin',
+						value: 'set_group_admin',
+						action: 'Set group admin',
+					}
 				],
 				displayOptions: {
 					show: {
@@ -489,7 +495,52 @@ export class OneBot implements INodeType {
 					},
 				},
 			},
-
+			{
+				displayName: 'Owned Group Name or ID',
+				name: 'group_id',
+				type: 'options',
+				description: 'Only shows groups where you are the owner. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+				typeOptions: {
+					loadOptionsMethod: 'getOwnedGroupList',
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['set_group_admin'],
+						resource: ['group'],
+					},
+				},
+			},
+			{
+				displayName: 'Member Name or ID',
+				name: 'user_id',
+				type: 'options',
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+				typeOptions: {
+					loadOptionsMethod: 'getGroupMemberList',
+					loadOptionsDependsOn: ['group_id'],
+				},
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['set_group_admin'],
+						resource: ['group'],
+					},
+				},
+			},
+			{
+				displayName: 'Enable Admin',
+				name: 'enable',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to set as admin (true) or remove admin privileges (false)',
+				displayOptions: {
+					show: {
+						operation: ['set_group_admin'],
+						resource: ['group'],
+					},
+				},
+			},
 		],
 	};
 
@@ -583,6 +634,9 @@ export class OneBot implements INodeType {
 					data = await sendGroupSign.call(this, index);
 					break;
 
+				case 'set_group_admin':
+					data = await SetAdmin.call(this, index);
+					break;
 
 				default: {
 					let body: IDataObject = {};
