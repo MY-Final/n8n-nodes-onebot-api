@@ -62,12 +62,12 @@ export class OneBot implements INodeType {
 						value: 'message',
 					},
 					{
-						name: 'Relationship',
-						value: 'relationship',
-					},
-					{
 						name: 'Other',
 						value: 'other',
+					},
+					{
+						name: 'Relationship',
+						value: 'relationship',
 					},
 				],
 			},
@@ -79,12 +79,12 @@ export class OneBot implements INodeType {
 				default: 'get_status',
 				options: [
 					{
-						name: 'Get status',
+						name: 'Get Status',
 						value: 'get_status',
 						action: 'Get status',
 					},
 					{
-						name: 'Get version info',
+						name: 'Get Version Info',
 						value: 'get_version_info',
 						action: 'Get version info',
 					},
@@ -176,6 +176,16 @@ export class OneBot implements INodeType {
 						action: 'Get group member list',
 					},
 					{
+						name: 'Kick User',
+						value: 'kick_user',
+						action: 'Kick user',
+					},
+					{
+						name: 'Leave Group',
+						value: 'group_leave',
+						action: 'Leave group',
+					},
+					{
 						name: 'Mute All',
 						value: 'mute_all',
 						action: 'Mute all',
@@ -189,16 +199,6 @@ export class OneBot implements INodeType {
 						name: 'Send Poke',
 						value: 'send_poke',
 						action: 'Send poke',
-					},
-					{
-						name: 'Leave Group',
-						value: 'group_leave',
-						action: 'Leave Group',
-					},
-					{
-						name: 'Kick User',
-						value: 'kick_user',
-						action: 'Kick User',
 					},
 				],
 				displayOptions: {
@@ -338,8 +338,7 @@ export class OneBot implements INodeType {
 				displayName: 'Managed Group Name or ID',
 				name: 'managed_group_id',
 				type: 'options',
-				description:
-					'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression.',
+				description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
 				typeOptions: {
 					loadOptionsMethod: 'getManagedGroupList',
 				},
@@ -383,7 +382,6 @@ export class OneBot implements INodeType {
 				default: [],
 				description:
 					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
-				required: false,
 				displayOptions: {
 					show: {
 						operation: ['mute_user', 'kick_user'],
@@ -503,8 +501,8 @@ export class OneBot implements INodeType {
 				const operation = this.getNodeParameter('operation', 0) as string;
 				const action = { resource, operation } as MessageAction;
 
-				const {data: info} = (await apiRequest.call(this, 'GET', '/get_login_info')) as {
-					data: LoginInfo
+				const { data: info } = (await apiRequest.call(this, 'GET', '/get_login_info')) as {
+					data: LoginInfo;
 				};
 
 				const body: IDataObject = {};

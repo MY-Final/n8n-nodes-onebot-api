@@ -12,8 +12,8 @@ export const API_PATHS = {
 	// 获取群成员列表
 	getGroupMemberList: 'get_group_member_list',
 
-  // 点赞
-  sendLike: 'send_like',
+	// 点赞
+	sendLike: 'send_like',
 
 	// 发送戳一戳
 	sendPoke: 'send_poke',
