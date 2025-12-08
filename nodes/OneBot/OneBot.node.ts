@@ -16,6 +16,7 @@ import { MuteUser, MuteAll } from './action/group-managements/Mute';
 import { getManagedGroupList, getOwnedGroupList } from '../utils/ManagedGroupUtils';
 import { KickUser, LeaveGroup } from './action/group-managements/Kick';
 import { DeleteFriend } from './action/friend-managements/DeleFriend';
+import { sendGroupSign } from './action/interactive/SendGroupSign';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -69,6 +70,10 @@ export class OneBot implements INodeType {
 						name: 'Relationship',
 						value: 'relationship',
 					},
+					{
+						name: 'Engagement',
+						value: 'engagement',
+					}
 				],
 			},
 			{
@@ -200,6 +205,11 @@ export class OneBot implements INodeType {
 						value: 'send_poke',
 						action: 'Send poke',
 					},
+					{
+						name: 'Group Sign',
+						value: 'send_group_sign',
+						action: 'Send group sign',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -329,6 +339,7 @@ export class OneBot implements INodeType {
 							'get_group_member_info',
 							'send_poke',
 							'group_leave',
+							'send_group_sign'
 						],
 						resource: ['group'],
 					},
@@ -478,6 +489,7 @@ export class OneBot implements INodeType {
 					},
 				},
 			},
+
 		],
 	};
 
@@ -567,6 +579,10 @@ export class OneBot implements INodeType {
 				case 'delete_friend':
 					data = await DeleteFriend.call(this, index);
 					break;
+				case 'send_group_sign':
+					data = await sendGroupSign.call(this, index);
+					break;
+
 
 				default: {
 					let body: IDataObject = {};

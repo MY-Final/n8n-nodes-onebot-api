@@ -34,5 +34,8 @@ export const API_PATHS = {
 	setGroupLeave: 'set_group_leave',
 
 	// 删除好友
-	deleteFriend: 'delete_friend'
+	deleteFriend: 'delete_friend',
+
+	// 群打卡
+	sendGroupSign: 'set_group_sign'
 };
