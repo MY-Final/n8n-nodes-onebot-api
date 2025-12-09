@@ -18,6 +18,7 @@ import { KickUser, LeaveGroup } from './action/group-managements/Kick';
 import { DeleteFriend } from './action/friend-managements/DeleFriend';
 import { sendGroupSign } from './action/interactive/SendGroupSign';
 import { SetAdmin } from './action/group-managements/SetAdmin';
+import { sendPrivateMsg, sendGroupMsg } from './action/message/SendMessage';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -322,7 +323,7 @@ export class OneBot implements INodeType {
 				displayOptions: {
 					show: {
 						operation: ['send_private_msg', 'get_stranger_info', 'send_like', 'send_poke'],
-						resource: ['friend'],
+						resource: ['friend', 'message'],
 					},
 				},
 			},
@@ -347,7 +348,7 @@ export class OneBot implements INodeType {
 							'group_leave',
 							'send_group_sign'
 						],
-						resource: ['group'],
+						resource: ['group', 'message'],
 					},
 				},
 			},
@@ -630,6 +631,7 @@ export class OneBot implements INodeType {
 				case 'delete_friend':
 					data = await DeleteFriend.call(this, index);
 					break;
+
 				case 'send_group_sign':
 					data = await sendGroupSign.call(this, index);
 					break;
@@ -638,17 +640,21 @@ export class OneBot implements INodeType {
 					data = await SetAdmin.call(this, index);
 					break;
 
+				case 'send_private_msg':
+					data = await sendPrivateMsg.call(this, index);
+					break;
+
+				case 'send_group_msg':
+					data = await sendGroupMsg.call(this, index);
+					break;
+
 				default: {
 					let body: IDataObject = {};
 					switch (action.operation) {
-						case 'send_private_msg':
-							body.message = this.getNodeParameter('message', index) as string;
 						case 'get_stranger_info':
 							body.user_id = this.getNodeParameter('user_id', index) as number;
 							break;
 
-						case 'send_group_msg':
-							body.message = this.getNodeParameter('message', index) as string;
 						case 'get_group_member_list':
 						case 'get_group_info':
 							body.group_id = this.getNodeParameter('group_id', index) as number;
