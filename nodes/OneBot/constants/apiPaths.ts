@@ -41,4 +41,10 @@ export const API_PATHS = {
 
 	// 设置管理员
 	setGroupAdmin: 'set_group_admin',
+
+	// 发送私聊消息
+	sendPrivateMsg: 'send_private_msg',
+
+	// 发送群消息
+	sendGroupMsg: 'send_group_msg',
 };
