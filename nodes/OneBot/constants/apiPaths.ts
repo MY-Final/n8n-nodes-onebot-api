@@ -45,6 +45,12 @@ export const API_PATHS = {
 	// 发送私聊消息
 	sendPrivateMsg: 'send_private_msg',
 
+	// 发送私聊合并转发消息
+	sendPrivateForward: 'send_private_forward',
+
 	// 发送群消息
 	sendGroupMsg: 'send_group_msg',
+
+	// 发送群合并转发消息
+	sendGroupForward: 'send_group_forward',
 };
