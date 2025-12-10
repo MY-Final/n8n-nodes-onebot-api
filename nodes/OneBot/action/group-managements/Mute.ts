@@ -58,7 +58,7 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	for (const uid of targets) {
 		const body: IDataObject = { group_id, user_id: uid, duration };
 		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupBan, body);
+			const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupBan}`, body);
 			results.push({ user_id: uid, ok: true, data });
 		} catch (err) {
 			results.push({
@@ -110,7 +110,7 @@ export async function MuteAll(this: IExecuteFunctions, index: number): Promise<I
 		enable,
 	};
 
-	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupWholeBan, body);
+	const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupWholeBan}`, body);
 
 	return data;
 }

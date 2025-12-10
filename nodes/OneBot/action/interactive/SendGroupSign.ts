@@ -12,7 +12,7 @@ export async function sendGroupSign(this: IExecuteFunctions, index: number): Pro
 
 	const group_id = this.getNodeParameter('group_id', index) as number;
 	const body: IDataObject = { group_id };
-	return await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);
+	return await apiRequest.call(this, 'POST', `/${API_PATHS.sendGroupSign}`, body);
 
 }
 

@@ -58,7 +58,7 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	for (const uid of targets) {
 		const body: IDataObject = { group_id, user_id: uid, reject_add_request };
 		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupKick, body);
+			const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupKick}`, body);
 			results.push({ user_id: uid, ok: true, data });
 		} catch (err) {
 			results.push({
@@ -94,6 +94,6 @@ export async function LeaveGroup(this: IExecuteFunctions, index: number): Promis
 
 	const body: IDataObject = { group_id };
 
-	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
+	const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupLeave}`, body);
 	return data;
 }

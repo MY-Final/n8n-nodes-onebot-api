@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
@@ -24,7 +24,5 @@ export async function SendPoke(this: IExecuteFunctions, index: number): Promise<
 		body.group_id = group_id;
 	}
 
-	const data = await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
-
-	return data;
+	return await apiRequest.call(this, 'POST', `/${API_PATHS.sendPoke}`, body);
 }
