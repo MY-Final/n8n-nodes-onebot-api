@@ -1,4 +1,4 @@
-# n8n-nodes-onebot
+# n8n-nodes-onebot-api
 
 This is an n8n community node. It lets you use OneBot v11 in your n8n workflows.
 
@@ -19,21 +19,45 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 ## Operations
 
+### Bot
 - Get login info
+
+### Friend
 - Get friend list
 - Get stranger info
-- Get group list
+- Send like
+- Send poke
+
+### Group
 - Get group info
-- Get group member list
+- Get group list
 - Get group member info
-- Get status
-- Get version info
+- Get group member list
+- Kick user
+- Leave group
+- Mute all
+- Mute user
+- Send poke
+- Group sign
+- Set group admin
+
+### Message
 - Send private message
 - Send group message
+- Forward message mode (for multiple messages)
+
+### Relationship
+- Delete friend
+- Temporary block user (when deleting friend)
+- Both-side delete (when deleting friend from both lists)
+
+### Other
+- Get status
+- Get version info
 
 ## Credentials
 
-need a access token.
+Requires an access token for authenticating with the OneBot API.
 
 ## Compatibility
 
@@ -41,7 +65,13 @@ go-cqhttp v1.1.0
 
 ## Usage
 
-Function is very simple and needs no explanation.
+This node provides a user-friendly interface to interact with OneBot API endpoints. Simply:
+1. Configure your credentials with the OneBot API access token
+2. Select the desired resource and operation
+3. Fill in the required parameters
+4. Run your workflow
+
+For detailed usage instructions and examples, refer to the [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/).
 
 ## Resources
 
