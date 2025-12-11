@@ -40,6 +40,7 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 - Send poke
 - Group sign
 - Set group admin
+- Send Group Sign
 
 ### Message
 - Send private message
@@ -62,6 +63,7 @@ Requires an access token for authenticating with the OneBot API.
 ## Compatibility
 
 go-cqhttp v1.1.0
+napcat
 
 ## Usage
 
