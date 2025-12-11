@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
 
@@ -101,7 +101,9 @@ export async function MuteAll(this: IExecuteFunctions, index: number): Promise<I
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
 		throw new Error(
-			`机器人没有权限执行全员禁言操作。当前角色：${permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'}，需要管理员或群主权限。`,
+			`机器人没有权限执行全员禁言操作。当前角色：${
+				permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
+			}，需要管理员或群主权限。`,
 		);
 	}
 
@@ -110,9 +112,8 @@ export async function MuteAll(this: IExecuteFunctions, index: number): Promise<I
 		enable,
 	};
 
-	const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupWholeBan}`, body);
 
-	return data;
+	return await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupWholeBan}`, body);
 }
 
 
