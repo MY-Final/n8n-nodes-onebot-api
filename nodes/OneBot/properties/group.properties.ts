@@ -43,6 +43,12 @@ export const groupProperties: INodeProperties[] = [
 				description: 'Grant or revoke admin role of a user',
 				action: 'Set group admin',
 			},
+			{
+				name: 'Group Sign',
+				value: 'send_group_sign',
+				description: 'Send a group sign',
+				action: 'Send group sign',
+			}
 		],
 		default: 'mute_user',
 		displayOptions: {
@@ -97,7 +103,7 @@ export const groupProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['group_leave'],
+				operation: ['group_leave','send_group_sign'],
 				resource: ['group'],
 			},
 		},

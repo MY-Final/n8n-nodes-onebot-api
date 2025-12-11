@@ -82,7 +82,7 @@ export class OneBot implements INodeType {
 						value: 'relationship',
 					},
 					{
-						name: 'Engagement',
+						name: '预留项',
 						value: 'engagement',
 					}
 				],
