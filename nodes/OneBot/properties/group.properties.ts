@@ -68,6 +68,40 @@ export const groupProperties: INodeProperties[] = [
 			},
 		},
 	},
+	// 设置管理员需要
+	{
+		displayName: 'Owned Group Name or ID',
+		name: 'managed_group_id',
+		type: 'options',
+		description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		typeOptions: {
+			loadOptionsMethod: 'getOwnedGroupList',
+		},
+		default: '',
+		displayOptions: {
+			show: {
+				operation: ['set_group_admin'],
+				resource: ['group'],
+			},
+		},
+	},
+	// 退群需要所有群组
+	{
+		displayName: 'Managed Group Name or ID',
+		name: 'managed_group_id',
+		type: 'options',
+		description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		typeOptions: {
+			loadOptionsMethod: 'getGroupList',
+		},
+		default: '',
+		displayOptions: {
+			show: {
+				operation: ['group_leave'],
+				resource: ['group'],
+			},
+		},
+	},
 	// Fields for specific actions
 	{
 		displayName: 'User',
@@ -75,7 +109,7 @@ export const groupProperties: INodeProperties[] = [
 		type: 'options',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
-			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
+			loadOptionsDependsOn: ['group_id', 'managed_group_id','set_group_admin'],
 		},
 		default: '',
 		required: true,

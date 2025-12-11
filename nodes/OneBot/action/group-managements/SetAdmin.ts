@@ -5,7 +5,7 @@ import { API_PATHS } from '../../constants/apiPaths';
 
 export async function SetAdmin(this: IExecuteFunctions, index: number): Promise<IDataObject> {
      const body: IDataObject = {
-       group_id: this.getNodeParameter('group_id', index) as number,
+       group_id: this.getNodeParameter('managed_group_id', index) as number,
        user_id: this.getNodeParameter('user_id', index) as number,
        enable: this.getNodeParameter('enable', index) as boolean
      };
