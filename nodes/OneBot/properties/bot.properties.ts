@@ -1,5 +1,6 @@
 import { INodeProperties } from 'n8n-workflow';
 
+//  Properties for Bot Resource
 export const botProperties: INodeProperties[] = [
 	{
 		displayName: 'Operation',
