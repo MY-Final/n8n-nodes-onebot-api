@@ -375,6 +375,488 @@ credentials/
 5. 凭证必须实现 `test` 方法用于验证连接
 6. 属性必须使用 `noDataExpression: true` 防止表达式意外计算
 
+## 消息发送功能说明
+
+### 支持的消息格式
+
+消息内容支持三种格式：
+
+1. **纯文本**: `"你好，世界"`
+2. **CQ 码**: `"[CQ:face,id=123]你好"`
+3. **消息段数组** (JSON):
+   ```json
+   [
+   	{ "type": "text", "data": { "text": "你好" } },
+   	{ "type": "face", "data": { "id": "123" } }
+   ]
+   ```
+
+### 消息接口
+
+- `send_msg`: 统一接口，通过 `message_type` 选择私聊/群聊
+- `send_private_msg`: 快捷私聊接口
+- `send_group_msg`: 快捷群聊接口
+
+### Forward Mode（合并转发）
+
+当 `forward_mode: true` 时，使用合并转发发送消息（支持单条或多条）。
+
+**全局参数（仅 Forward Mode 下可用）:**
+
+- `use_custom_sender`: 是否自定义发送者信息（全局默认）
+- `sender_nickname`: 默认发送者昵称
+- `sender_uin`: 默认发送者 QQ 号
+- `time`: 消息时间戳
+- `source`: 转发来源
+- `summary`: 转发摘要
+- `prompt`: 转发提示
+- `news`: 转发的新闻列表（数组）
+
+**每条消息的独立参数（可覆盖全局配置）:**
+
+- `sender_nickname`: 该条消息的发送者昵称
+- `sender_uin`: 该条消息的发送者 QQ 号
+- `time`: 该条消息的时间戳
+
+### 多发送者示例
+
+```javascript
+// n8n Code 节点示例
+return [
+	{
+		json: {
+			message: 'cc 谁捏',
+			sender_nickname: 'Vergil',
+			sender_uin: '2375736565',
+		},
+	},
+	{
+		json: {
+			message: 'cc 他们的',
+			sender_nickname: 'final',
+			sender_uin: '1150880493',
+		},
+	},
+	{
+		json: {
+			message: 'wowowowowowoowowo',
+			sender_nickname: '幻影',
+			sender_uin: '1693577405',
+		},
+	},
+];
+```
+
+### 可选参数
+
+- `auto_escape`: 是否纯文本发送（转义 CQ 码）
+- `forward_mode`: 多条输入时是否合并转发
+
+### auto_escape 参数示例
+
+**场景 1：发送包含 CQ 码的文本（希望正常解析）**
+
+```json
+{
+	"message": "[CQ:face,id=123] 你好"
+}
+// auto_escape: false (默认)
+// 结果：显示一个表情 + "你好"
+```
+
+**场景 2：发送包含 CQ 码的文本（希望作为纯文本显示）**
+
+```json
+{
+	"message": "[CQ:face,id=123] 你好",
+	"auto_escape": true
+}
+// 结果：直接显示文本 "[CQ:face,id=123] 你好"
+```
+
+**场景 3：发送带特殊字符的文本**
+
+```json
+{
+	"message": "请发送 &lt;hello&gt; 到群里",
+	"auto_escape": true
+}
+// 结果：原样显示 "请发送 <hello> 到群里"
+```
+
+**场景 4：使用消息段数组（推荐方式，不受 auto_escape 影响）**
+
+```json
+{
+	"message": [
+		{ "type": "text", "data": { "text": "你好" } },
+		{ "type": "face", "data": { "id": "123" } }
+	]
+}
+// 结果：总是显示 "你好" + 表情（结构化数据，无需转义）
+```
+
+### 上传群文件
+
+**Resource:** `Files`  
+**Operation:** `Upload Group File`
+
+**必填参数:**
+
+- `group_id`: 群号
+- `file`: 文件路径或 URL（本地文件路径、file:/// 协议或 HTTP URL）
+- `name`: 文件名（显示在群内的名称）
+
+**可选参数:**
+
+- `folder`: 父目录 ID（上传到指定文件夹）
+- `folder_id`: 父目录 ID（兼容性字段）
+- `upload_file`: 是否执行上传（默认 true）
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "upload_group_file",
+	"group_id": 123456,
+	"file": "/path/to/file.txt",
+	"name": "测试文件.txt",
+	"folder": ""
+}
+```
+
+**支持的文件来源:**
+
+- 本地文件路径：`/home/user/file.txt` 或 `C:\\Users\\file.txt`
+- file:/// 协议：`file:///path/to/file.txt`
+- HTTP/HTTPS URL: `https://example.com/file.txt` 或 GitHub Releases 链接
+
+### 获取群文件列表
+
+**Resource:** `Files`  
+**Operation:** `Get Group Root Files` | `Get Group Files By Folder`
+
+#### 获取根目录文件列表
+
+**必填参数:**
+
+- `group_id`: 群号
+
+**可选参数:**
+
+- `file_count`: 一次性获取的文件数量（默认 50）
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_group_root_files",
+	"group_id": 123456,
+	"file_count": 50
+}
+```
+
+#### 获取子目录文件列表
+
+**必填参数:**
+
+- `group_id`: 群号
+- `folder_id`: 文件夹 ID
+
+**可选参数:**
+
+- `folder_name`: 文件夹名称（用于显示）
+- `file_count`: 一次性获取的文件数量（默认 50）
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_group_files_by_folder",
+	"group_id": 123456,
+	"folder_id": "folder_uuid_123",
+	"folder_name": "我的文件夹",
+	"file_count": 50
+}
+```
+
+**返回数据结构:**
+
+```json
+{
+	"data": {
+		"files": [
+			{
+				"file_id": "file_uuid",
+				"file_name": "文件.txt",
+				"file_size": 1024,
+				"upload_time": 1234567890,
+				"uploader": 123456,
+				"uploader_name": "上传者"
+			}
+		],
+		"folders": [
+			{
+				"folder_id": "folder_uuid",
+				"folder_name": "文件夹名",
+				"total_file_count": 10
+			}
+		]
+	}
+}
+```
+
+### 获取群文件系统信息
+
+**Resource:** `Files`  
+**Operation:** `Get Group File System Info`
+
+**必填参数:**
+
+- `group_id`: 群号
+
+**返回数据:**
+
+- `file_count`: 文件总数
+- `limit_count`: 文件上限
+- `used_space`: 已使用空间
+- `total_space`: 空间上限
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_group_file_system_info",
+	"group_id": 123456
+}
+```
+
+### 获取文件信息
+
+**Resource:** `Files`  
+**Operation:** `Get File Info`
+
+**必填参数（二选一）:**
+
+- `file_id`: 文件 ID
+- `file`: 文件路径
+
+**返回数据:**
+
+- `file`: 文件路径或链接
+- `url`: 下载链接
+- `file_size`: 文件大小
+- `file_name`: 文件名
+- `base64`: 文件 base64 编码
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_file",
+	"file_id": "file_uuid_123"
+}
+```
+
+或
+
+```json
+{
+	"resource": "files",
+	"operation": "get_file",
+	"file": "/path/to/file.txt"
+}
+```
+
+**支持的文件来源:**
+
+- 本地文件路径：`/home/user/file.txt` 或 `C:\\Users\\file.txt`
+- file:/// 协议：`file:///path/to/file.txt`
+- HTTP/HTTPS URL: `https://example.com/file.txt`
+
+### 获取群文件系统信息
+
+**Resource:** `Files`  
+**Operation:** `Get Group File System Info`
+
+**必填参数:**
+
+- `group_id`: 群号
+
+**返回数据:**
+
+- `file_count`: 文件总数
+- `limit_count`: 文件上限
+- `used_space`: 已使用空间
+- `total_space`: 空间上限
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_group_file_system_info",
+	"group_id": 123456
+}
+```
+
+### 获取文件信息
+
+**Resource:** `Files`  
+**Operation:** `Get File Info`
+
+**必填参数（二选一）:**
+
+- `file_id`: 文件 ID
+- `file`: 文件路径
+
+**返回数据:**
+
+- `file`: 文件路径或链接
+- `url`: 下载链接
+- `file_size`: 文件大小
+- `file_name`: 文件名
+- `base64`: 文件 base64 编码
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_file",
+	"file_id": "file_uuid_123"
+}
+```
+
+或
+
+```json
+{
+	"resource": "files",
+	"operation": "get_file",
+	"file": "/path/to/file.txt"
+}
+```
+
+#### 获取子目录文件列表
+
+**必填参数:**
+
+- `group_id`: 群号
+- `folder_id`: 文件夹 ID
+
+**可选参数:**
+
+- `folder_name`: 文件夹名称（用于显示）
+- `file_count`: 一次性获取的文件数量（默认 50）
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "get_group_files_by_folder",
+	"group_id": 123456,
+	"folder_id": "folder_uuid_123",
+	"folder_name": "我的文件夹",
+	"file_count": 50
+}
+```
+
+**返回数据结构:**
+
+```json
+{
+	"data": {
+		"files": [
+			{
+				"file_id": "file_uuid",
+				"file_name": "文件.txt",
+				"file_size": 1024,
+				"upload_time": 1234567890,
+				"uploader": 123456,
+				"uploader_name": "上传者"
+			}
+		],
+		"folders": [
+			{
+				"folder_id": "folder_uuid",
+				"folder_name": "文件夹名",
+				"total_file_count": 10
+			}
+		]
+	}
+}
+```
+
+### 创建群文件文件夹
+
+**Resource:** `Files`  
+**Operation:** `Create Group File Folder`
+
+**必填参数:**
+
+- `group_id`: 群号
+- `folder_name`: 文件夹名称
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "create_group_file_folder",
+	"group_id": 123456,
+	"folder_name": "我的文件夹"
+}
+```
+
+### 删除群文件
+
+**Resource:** `Files`  
+**Operation:** `Delete Group File`
+
+**必填参数:**
+
+- `group_id`: 群号
+- `file_id`: 文件 ID
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "delete_group_file",
+	"group_id": 123456,
+	"file_id": "file_uuid_123"
+}
+```
+
+### 删除群文件夹
+
+**Resource:** `Files`  
+**Operation:** `Delete Group Folder`
+
+**必填参数:**
+
+- `group_id`: 群号
+- `folder_id`: 文件夹 ID
+
+**示例:**
+
+```json
+{
+	"resource": "files",
+	"operation": "delete_group_folder",
+	"group_id": 123456,
+	"folder_id": "folder_uuid_123"
+}
+```
+
 ## 开发规范补充
 
 ### 类型安全规范
