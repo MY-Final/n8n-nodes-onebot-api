@@ -42,7 +42,8 @@ export class OneBot implements INodeType {
 		displayName: 'OneBot',
 		name: 'oneBot',
 		icon: 'file:onebot.svg',
-		description: 'Consume OneBot API',
+		description:
+			'Control QQ bot via OneBot protocol. Send messages, manage groups, upload files, and more.',
 		subtitle: '={{ $parameter["operation"] }}',
 		version: 1,
 		defaults: {
@@ -51,6 +52,7 @@ export class OneBot implements INodeType {
 		group: ['transform'],
 		inputs: ['main'],
 		outputs: ['main'],
+		usableAsTool: true,
 		credentials: [
 			{
 				name: 'oneBotApi',
