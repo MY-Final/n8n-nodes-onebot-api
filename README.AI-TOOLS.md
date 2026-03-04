@@ -238,7 +238,7 @@ AI Agent 处理:
 
 - [OneBot 协议文档](https://github.com/botuniverse/onebot-11)
 - [n8n AI Agent 文档](https://docs.n8n.io/advanced-usage/ai/overview/)
-- [项目 GitHub](https://github.com/MY-Final/n8n-nodes-onebot)
+- [项目 GitHub](https://github.com/MY-Final/n8n-nodes-onebot-api)
 
 ---
 

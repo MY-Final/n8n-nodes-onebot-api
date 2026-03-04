@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "OneBot node for n8n workflow",
 	"license": "MIT",
-	"homepage": "https://github.com/MY-Final/n8n-nodes-onebot",
+	"homepage": "https://github.com/MY-Final/n8n-nodes-onebot-api",
 	"keywords": [
 		"n8n-community-node-package",
 		"onebot",
@@ -19,7 +19,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/MY-Final/n8n-nodes-onebot.git"
+		"url": "https://github.com/MY-Final/n8n-nodes-onebot-api.git"
 	},
 	"scripts": {
 		"build": "n8n-node build",
