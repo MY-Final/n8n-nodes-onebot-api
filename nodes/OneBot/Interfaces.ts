@@ -7,11 +7,32 @@ import { AllEntities, Entity, PropertiesOf } from 'n8n-workflow';
  */
 export type OneBotMap = {
 	bot: 'get_login_info';
+	files:
+		| 'upload_group_file'
+		| 'get_group_root_files'
+		| 'get_group_files_by_folder'
+		| 'get_group_file_system_info'
+		| 'get_file'
+		| 'create_group_file_folder'
+		| 'delete_group_file'
+		| 'delete_group_folder'
+		| 'move_group_file'
+		| 'rename_group_file';
 	friend: 'get_stranger_info' | 'get_friend_list' | 'send_like' | 'send_poke' | 'delete_friend';
-	group: 'get_group_info' | 'get_group_list' | 'get_group_member_info' | 'get_group_member_list'
-	| 'send_poke' | 'mute_user' | 'mute_all' | 'set_group_ban' | 'set_group_whole_ban'
-	| 'kick_user' | 'group_leave' | 'set_group_admin';
-	message: 'send_group_msg' | 'send_private_msg';
+	group:
+		| 'get_group_info'
+		| 'get_group_list'
+		| 'get_group_member_info'
+		| 'get_group_member_list'
+		| 'send_poke'
+		| 'mute_user'
+		| 'mute_all'
+		| 'set_group_ban'
+		| 'set_group_whole_ban'
+		| 'kick_user'
+		| 'group_leave'
+		| 'set_group_admin';
+	message: 'send_group_msg' | 'send_private_msg' | 'send_msg';
 	misc: 'get_status' | 'get_version_info';
 	engagement: 'send_group_sign';
 };
