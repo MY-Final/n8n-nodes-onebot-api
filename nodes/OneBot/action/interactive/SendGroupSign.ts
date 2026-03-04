@@ -3,13 +3,22 @@ import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
- * 发送群组签名请求
- * @param this - 执行函数上下文对象
- * @param index - 节点参数索引
- * @returns 返回API响应数据对象
+ * 群打卡
+ * 必填字段：
+ * - group_id: string 群号
+ *
+ * 用于在群内进行每日打卡签到
  */
 export async function sendGroupSign(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const group_id = this.getNodeParameter('managed_group_id', index) as number;
-	const body: IDataObject = { group_id };
+	const group_id = this.getNodeParameter('group_id', index) as string | number;
+
+	if (!group_id) {
+		throw new Error('group_id is required');
+	}
+
+	const body: IDataObject = {
+		group_id: String(group_id),
+	};
+
 	return await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);
 }

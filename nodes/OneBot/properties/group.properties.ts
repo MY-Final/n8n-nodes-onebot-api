@@ -49,8 +49,14 @@ export const groupProperties: INodeProperties[] = [
 				description: 'Grant or revoke admin role of a user',
 				action: 'Set group admin',
 			},
+			{
+				name: 'Upload Group File',
+				value: 'upload_group_file',
+				description: 'Upload a file to the group',
+				action: 'Upload group file',
+			},
 		],
-		default: 'mute_user',
+		default: 'upload_group_file',
 		displayOptions: {
 			show: {
 				resource: ['group'],
@@ -95,11 +101,10 @@ export const groupProperties: INodeProperties[] = [
 	},
 	// 退群需要所有群组
 	{
-		displayName: 'Managed Group Name or ID',
-		name: 'managed_group_id',
+		displayName: 'Group Name or ID',
+		name: 'group_id',
 		type: 'options',
-		description:
-			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupList',
 		},
@@ -131,6 +136,62 @@ export const groupProperties: INodeProperties[] = [
 			},
 		},
 	},
+	// Upload Group File fields
+	{
+		displayName: 'File Path or URL',
+		name: 'file',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'File path on server or URL to upload',
+		placeholder: '/path/to/file.txt or https://example.com/file.txt',
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['upload_group_file'],
+			},
+		},
+	},
+	{
+		displayName: 'File Name',
+		name: 'name',
+		type: 'string',
+		default: '',
+		required: true,
+		description: 'File name to display in the group',
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['upload_group_file'],
+			},
+		},
+	},
+	{
+		displayName: 'Folder ID',
+		name: 'folder',
+		type: 'string',
+		default: '',
+		description: 'Parent folder ID (optional)',
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['upload_group_file'],
+			},
+		},
+	},
+	{
+		displayName: 'Folder ID (Alternative)',
+		name: 'folder_id',
+		type: 'string',
+		default: '',
+		description: 'Parent folder ID (compatibility field, optional)',
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['upload_group_file'],
+			},
+		},
+	},
 	{
 		displayName: 'Duration (Seconds)',
 		name: 'duration',
@@ -142,6 +203,19 @@ export const groupProperties: INodeProperties[] = [
 			show: {
 				resource: ['group'],
 				operation: ['mute_user'],
+			},
+		},
+	},
+	{
+		displayName: 'Reject Add Request',
+		name: 'reject_add_request',
+		type: 'boolean',
+		default: false,
+		description: "Whether to reject the user's add request (blacklist)",
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['kick_user'],
 			},
 		},
 	},
