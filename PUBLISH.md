@@ -54,7 +54,7 @@ git push origin v1.0.0
 
 ```mermaid
 graph TD
-    A[推送到 main 分支] --> B{package.json 变化？}
+    A[推送到 refactor 分支] --> B{package.json 变化？}
     B -->|是 | C[GitHub Actions 触发]
     B -->|否 | D[不发布]
     C --> E[安装依赖]
@@ -86,7 +86,7 @@ graph TD
 ## ⚠️ 注意事项
 
 1. **版本号必须唯一** - npm 不允许覆盖已发布的版本
-2. **推送到 main 分支** - 只有 main 分支会触发自动发布
+2. **推送到 refactor 分支** - 只有 refactor 分支会触发自动发布
 3. **需要 npm_token** - 确保 Secret 已正确配置
 4. **public access** - 包会发布为 public（需要 npm 账号支持）
 
