@@ -5,6 +5,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import { apiRequest } from './GenericFunctions';
@@ -27,7 +28,12 @@ import { KickUser, LeaveGroup } from './action/group-managements/Kick';
 import { DeleteFriend } from './action/friend-managements/DeleFriend';
 import { sendGroupSign } from './action/interactive/SendGroupSign';
 import { SetAdmin } from './action/group-managements/SetAdmin';
-import { sendPrivateMsg, sendGroupMsg, sendPrivateForwardMsg, sendGroupForwardMsg } from './action/message/SendMessage';
+import {
+	sendPrivateMsg,
+	sendGroupMsg,
+	sendPrivateForwardMsg,
+	sendGroupForwardMsg,
+} from './action/message/SendMessage';
 
 export class OneBot implements INodeType {
 	description: INodeTypeDescription = {
@@ -58,6 +64,10 @@ export class OneBot implements INodeType {
 				default: 'message',
 				options: [
 					{
+						name: '预留项',
+						value: 'engagement',
+					},
+					{
 						name: 'Bot',
 						value: 'bot',
 					},
@@ -81,10 +91,6 @@ export class OneBot implements INodeType {
 						name: 'Relationship',
 						value: 'relationship',
 					},
-					{
-						name: '预留项',
-						value: 'engagement',
-					}
 				],
 			},
 			...botProperties,
@@ -126,7 +132,10 @@ export class OneBot implements INodeType {
 						break;
 
 					default:
-						throw new Error(`Unsupported forward operation: ${operation}`);
+						throw new NodeOperationError(
+							this.getNode(),
+							`Unsupported forward operation: ${operation}`,
+						);
 				}
 
 				const json = this.helpers.returnJsonArray(data);

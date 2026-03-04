@@ -12,7 +12,21 @@ import {
 } from '../../utils/SearchUtils';
 import { API_PATHS } from '../constants/apiPaths';
 
-export async function getGroupMemberList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+interface MemberInfo {
+	user_id?: number | string;
+	userId?: number | string;
+	uin?: number | string;
+	id?: number | string;
+	card?: string;
+	nickname?: string;
+	name?: string;
+	role?: string;
+	permission?: string;
+}
+
+export async function getGroupMemberList(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[]> {
 	try {
 		let group_id;
 		try {
@@ -34,19 +48,25 @@ export async function getGroupMemberList(this: ILoadOptionsFunctions): Promise<I
 		const hasSearch = hasSearchInput(currentInput);
 
 		const query = { group_id };
-		const response = await apiRequest.call(this, 'POST', API_PATHS.getGroupMemberList, undefined, query);
-		let memberData = [];
+		const response = await apiRequest.call(
+			this,
+			'POST',
+			API_PATHS.getGroupMemberList,
+			undefined,
+			query,
+		);
+		let memberData: MemberInfo[] = [];
 
 		if (response && typeof response === 'object') {
 			if (Array.isArray(response)) {
-				memberData = response;
+				memberData = response as MemberInfo[];
 			} else if (response.data && Array.isArray(response.data)) {
-				memberData = response.data;
+				memberData = response.data as MemberInfo[];
 			} else {
 				const possibleDataFields = ['result', 'members', 'list', 'member_list'];
 				for (const field of possibleDataFields) {
 					if (response[field] && Array.isArray(response[field])) {
-						memberData = response[field];
+						memberData = response[field] as MemberInfo[];
 						break;
 					}
 				}
@@ -56,11 +76,6 @@ export async function getGroupMemberList(this: ILoadOptionsFunctions): Promise<I
 		if (!memberData || memberData.length === 0) {
 			return handleEmptyData(isValidQQNumber, currentInput, '未找到群成员', 'qq');
 		}
-
-		const validMembers = memberData.filter((info: any) => {
-			const userId = info.user_id || info.userId || info.uin || info.id;
-			return !!userId && userId !== '' && userId !== 0;
-		});
 
 		const getRoleLabel = (role: string): string => {
 			switch (role) {
@@ -73,10 +88,13 @@ export async function getGroupMemberList(this: ILoadOptionsFunctions): Promise<I
 			}
 		};
 
-		const memberOptions: SearchableOption[] = validMembers
-			.map((info: any) => {
+		const memberOptions: SearchableOption[] = memberData
+			.filter((info) => {
+				const userId = info.user_id || info.userId || info.uin || info.id;
+				return !!userId && userId !== '' && userId !== 0;
+			})
+			.map((info: MemberInfo) => {
 				const userId = info.user_id || info.userId || info.uin || info.id || '';
-				if (!userId) return null;
 
 				let displayName = '';
 				if (info.card && info.card.trim() !== '') {
@@ -101,8 +119,7 @@ export async function getGroupMemberList(this: ILoadOptionsFunctions): Promise<I
 						userId: userId.toString().toLowerCase(),
 					},
 				};
-			})
-			.filter((item: SearchableOption | null): item is SearchableOption => item !== null);
+			});
 
 		const processedOptions = processSearchAndFilter(
 			memberOptions,

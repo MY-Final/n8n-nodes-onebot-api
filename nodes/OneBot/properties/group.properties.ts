@@ -14,16 +14,10 @@ export const groupProperties: INodeProperties[] = [
 		noDataExpression: true,
 		options: [
 			{
-				name: 'Mute User',
-				value: 'mute_user',
-				description: 'Mute a specific group member',
-				action: 'Mute user in group',
-			},
-			{
-				name: 'Mute All',
-				value: 'mute_all',
-				description: 'Mute all members in the group',
-				action: 'Mute all users in group',
+				name: 'Group Sign',
+				value: 'send_group_sign',
+				description: 'Send a group sign',
+				action: 'Send group sign',
 			},
 			{
 				name: 'Kick User',
@@ -38,17 +32,23 @@ export const groupProperties: INodeProperties[] = [
 				action: 'Leave group',
 			},
 			{
+				name: 'Mute All',
+				value: 'mute_all',
+				description: 'Mute all members in the group',
+				action: 'Mute all users in group',
+			},
+			{
+				name: 'Mute User',
+				value: 'mute_user',
+				description: 'Mute a specific group member',
+				action: 'Mute user in group',
+			},
+			{
 				name: 'Set Admin',
 				value: 'set_group_admin',
 				description: 'Grant or revoke admin role of a user',
 				action: 'Set group admin',
 			},
-			{
-				name: 'Group Sign',
-				value: 'send_group_sign',
-				description: 'Send a group sign',
-				action: 'Send group sign',
-			}
 		],
 		default: 'mute_user',
 		displayOptions: {
@@ -62,7 +62,8 @@ export const groupProperties: INodeProperties[] = [
 		displayName: 'Managed Group Name or ID',
 		name: 'managed_group_id',
 		type: 'options',
-		description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		description:
+			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getManagedGroupList',
 		},
@@ -79,7 +80,8 @@ export const groupProperties: INodeProperties[] = [
 		displayName: 'Owned Group Name or ID',
 		name: 'managed_group_id',
 		type: 'options',
-		description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		description:
+			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getOwnedGroupList',
 		},
@@ -96,26 +98,29 @@ export const groupProperties: INodeProperties[] = [
 		displayName: 'Managed Group Name or ID',
 		name: 'managed_group_id',
 		type: 'options',
-		description: 'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+		description:
+			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupList',
 		},
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['group_leave','send_group_sign'],
+				operation: ['group_leave', 'send_group_sign'],
 				resource: ['group'],
 			},
 		},
 	},
 	// Fields for specific actions
 	{
-		displayName: 'User',
+		displayName: 'User Name or ID',
 		name: 'user_id',
 		type: 'options',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
-			loadOptionsDependsOn: ['group_id', 'managed_group_id','set_group_admin'],
+			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
 		},
 		default: '',
 		required: true,
@@ -127,7 +132,7 @@ export const groupProperties: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Duration (seconds)',
+		displayName: 'Duration (Seconds)',
 		name: 'duration',
 		type: 'number',
 		default: 60,

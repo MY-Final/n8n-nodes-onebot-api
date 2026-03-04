@@ -9,10 +9,7 @@ import { API_PATHS } from '../../constants/apiPaths';
  * @returns 返回API响应数据对象
  */
 export async function sendGroupSign(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-
 	const group_id = this.getNodeParameter('managed_group_id', index) as number;
 	const body: IDataObject = { group_id };
-	return await apiRequest.call(this, 'POST', `/${API_PATHS.sendGroupSign}`, body);
-
+	return await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);
 }
-

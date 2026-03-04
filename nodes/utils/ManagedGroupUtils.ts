@@ -1,11 +1,38 @@
 import { ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow';
 import { apiRequest } from '../OneBot/GenericFunctions';
 
+interface GroupInfo {
+	id?: number | string;
+	name?: string;
+	role?: string;
+	group_id?: number | string;
+	group_name?: string;
+	groupId?: number | string;
+	groupName?: string;
+	gid?: number | string;
+	permission?: string;
+}
+
+interface LoginInfoResponse {
+	data?: {
+		user_id?: number;
+	};
+}
+
+interface GroupMemberInfoResponse {
+	data?: {
+		role?: string;
+	};
+}
+
 /**
  * 将群对象统一为 { id, name, role } 结构，适配不同字段名
  */
-function normalizeGroup(group: any) {
+function normalizeGroup(
+	group: GroupInfo,
+): { id: string | number; name: string; role?: string } | null {
 	const id = group.group_id ?? group.groupId ?? group.gid ?? group.id;
+	if (!id) return null;
 	const name = group.group_name ?? group.groupName ?? group.name ?? `群${id}`;
 	const role = group.role ?? group.permission ?? undefined;
 	return { id, name, role };
@@ -19,30 +46,27 @@ export async function getManagedGroupList(
 ): Promise<INodePropertyOptions[]> {
 	try {
 		// 获取机器人登录信息
-		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as {
-			data?: { user_id?: number };
-		};
+		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as LoginInfoResponse;
 
 		if (!loginInfo?.data?.user_id) {
-			console.error('获取登录信息失败，无法获取管理的群聊');
 			return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 		}
 
 		const botId = loginInfo.data.user_id;
-		console.log(`当前机器人QQ: ${botId}`);
 
 		// 获取群列表
-		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as {
-			data?: any[];
-		} | any[];
+		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as
+			| {
+					data?: GroupInfo[];
+			  }
+			| GroupInfo[];
 
-		let groupData: any[] = [];
+		let groupData: GroupInfo[] = [];
 		if (Array.isArray(groupListResponse)) {
 			groupData = groupListResponse;
 		} else if (groupListResponse?.data && Array.isArray(groupListResponse.data)) {
 			groupData = groupListResponse.data;
 		} else {
-			console.error('获取群列表失败或格式不正确');
 			return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 		}
 
@@ -50,7 +74,7 @@ export async function getManagedGroupList(
 
 		for (const raw of groupData) {
 			const group = normalizeGroup(raw);
-			if (!group.id) continue;
+			if (!group) continue;
 
 			// 如果群列表里已有 role 信息
 			if (group.role && (group.role === 'admin' || group.role === 'owner')) {
@@ -71,7 +95,7 @@ export async function getManagedGroupList(
 					'get_group_member_info',
 					undefined,
 					query,
-				)) as { data?: { role?: string } };
+				)) as GroupMemberInfoResponse;
 
 				const role = memberInfo?.data?.role;
 				if (role === 'admin' || role === 'owner') {
@@ -81,19 +105,19 @@ export async function getManagedGroupList(
 						description: String(group.id),
 					});
 				}
-			} catch (error) {
-				console.error(`获取群 ${group.id} 的成员信息失败:`, error);
+			} catch {
 				continue;
 			}
 		}
 
 		if (managedGroups.length === 0) {
-			return [{ name: '没有管理权限的群聊', value: '', description: '机器人不是任何群的管理员或群主' }];
+			return [
+				{ name: '没有管理权限的群聊', value: '', description: '机器人不是任何群的管理员或群主' },
+			];
 		}
 
 		return managedGroups;
-	} catch (error) {
-		console.error('获取管理的群聊列表失败:', error instanceof Error ? error.message : String(error));
+	} catch {
 		return [{ name: '获取失败', value: '', description: '获取管理的群聊列表时出错' }];
 	}
 }
@@ -106,30 +130,27 @@ export async function getOwnedGroupList(
 ): Promise<INodePropertyOptions[]> {
 	try {
 		// 获取机器人登录信息
-		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as {
-			data?: { user_id?: number };
-		};
+		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as LoginInfoResponse;
 
 		if (!loginInfo?.data?.user_id) {
-			console.error('获取登录信息失败，无法获取群主的群聊');
 			return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 		}
 
 		const botId = loginInfo.data.user_id;
-		console.log(`当前机器人QQ: ${botId}`);
 
 		// 获取群列表
-		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as {
-			data?: any[];
-		} | any[];
+		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as
+			| {
+					data?: GroupInfo[];
+			  }
+			| GroupInfo[];
 
-		let groupData: any[] = [];
+		let groupData: GroupInfo[] = [];
 		if (Array.isArray(groupListResponse)) {
 			groupData = groupListResponse;
 		} else if (groupListResponse?.data && Array.isArray(groupListResponse.data)) {
 			groupData = groupListResponse.data;
 		} else {
-			console.error('获取群列表失败或格式不正确');
 			return [{ name: '获取失败', value: '', description: '无法获取群列表' }];
 		}
 
@@ -137,7 +158,7 @@ export async function getOwnedGroupList(
 
 		for (const raw of groupData) {
 			const group = normalizeGroup(raw);
-			if (!group.id) continue;
+			if (!group) continue;
 
 			// 如果已有 role 信息且是群主
 			if (group.role === 'owner') {
@@ -159,7 +180,7 @@ export async function getOwnedGroupList(
 						'get_group_member_info',
 						undefined,
 						query,
-					)) as { data?: { role?: string } };
+					)) as GroupMemberInfoResponse;
 
 					if (memberInfo?.data?.role === 'owner') {
 						ownedGroups.push({
@@ -168,8 +189,7 @@ export async function getOwnedGroupList(
 							description: String(group.id),
 						});
 					}
-				} catch (error) {
-					console.error(`获取群 ${group.id} 的成员信息失败:`, error);
+				} catch {
 					continue;
 				}
 			}
@@ -180,8 +200,7 @@ export async function getOwnedGroupList(
 		}
 
 		return ownedGroups;
-	} catch (error) {
-		console.error('获取机器人是群主的群聊列表失败:', error instanceof Error ? error.message : String(error));
+	} catch {
 		return [{ name: '获取失败', value: '', description: '获取群主的群聊列表时出错' }];
 	}
 }

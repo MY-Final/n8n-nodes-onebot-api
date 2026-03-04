@@ -24,5 +24,5 @@ export async function SendPoke(this: IExecuteFunctions, index: number): Promise<
 		body.group_id = group_id;
 	}
 
-	return await apiRequest.call(this, 'POST', `/${API_PATHS.sendPoke}`, body);
+	return await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
 }

@@ -3,6 +3,13 @@ import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
 
+interface KickResult {
+	user_id: number;
+	ok: boolean;
+	data?: IDataObject;
+	error?: string;
+}
+
 /**
  * 将指定用户踢出群聊
  * 必填字段：
@@ -21,9 +28,12 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	}
 
 	// 支持多选成员
-	const userIdsParam = this.getNodeParameter('user_ids', index, []) as string[] | number[];
+	const userIdsParam = this.getNodeParameter('user_ids', index, []) as
+		| string[]
+		| number[]
+		| undefined;
 	const userIds = Array.isArray(userIdsParam)
-		? (userIdsParam as any[]).map((v) => Number(v)).filter((v) => !isNaN(v))
+		? userIdsParam.map((v) => Number(v)).filter((v) => !isNaN(v))
 		: [];
 
 	// 单选回退
@@ -43,7 +53,9 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
 		throw new Error(
-			`机器人没有权限执行踢人操作。当前角色：${permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'}，需要管理员或群主权限。`,
+			`机器人没有权限执行踢人操作。当前角色：${
+				permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
+			}，需要管理员或群主权限。`,
 		);
 	}
 
@@ -53,12 +65,12 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 		throw new Error('请至少选择一个成员进行踢出（支持多选或单选）。');
 	}
 
-	const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
+	const results: KickResult[] = [];
 
 	for (const uid of targets) {
 		const body: IDataObject = { group_id, user_id: uid, reject_add_request };
 		try {
-			const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupKick}`, body);
+			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupKick, body);
 			results.push({ user_id: uid, ok: true, data });
 		} catch (err) {
 			results.push({
@@ -94,6 +106,6 @@ export async function LeaveGroup(this: IExecuteFunctions, index: number): Promis
 
 	const body: IDataObject = { group_id };
 
-	const data = await apiRequest.call(this, 'POST', `/${API_PATHS.setGroupLeave}`, body);
+	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
 	return data;
 }
