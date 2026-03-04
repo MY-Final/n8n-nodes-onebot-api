@@ -28,7 +28,10 @@
 		"lint": "n8n-node lint",
 		"lint:fix": "n8n-node lint --fix",
 		"format": "prettier nodes credentials --write",
-		"release": "n8n-node release",
+		"release": "node scripts/release.js",
+		"release:major": "node scripts/release.js major",
+		"release:minor": "node scripts/release.js minor",
+		"release:patch": "node scripts/release.js patch",
 		"prepublishOnly": "n8n-node prerelease"
 	},
 	"files": [

@@ -1,0 +1,7 @@
+{
+  "tag_name": "v1.0.0",
+  "name": "v1.0.0 - AI Agent Tools Support",
+  "body": "## 🎉 重大更新\n\n### ✨ 新功能\n- 🤖 **AI Agent 完整支持** - 专为 AI 设计的简化接口\n- 📁 **完整的群文件管理** - 上传、下载、移动、删除、重命名\n- 💬 **消息发送增强** - Forward Mode、多发送者支持\n- 🔧 **群管理功能** - 禁言、踢人、设置管理员\n\n### 🛠️ 技术改进\n- 🏗️ 重构节点架构 - 使用映射表替代 switch\n- 📦 更新构建系统 - 迁移到新的 n8n CLI\n- 🚀 GitHub Actions - 自动发布到 npm\n- 📝 完善文档 - README、AGENTS.md、AI-TOOLS.md\n\n### 📊 统计\n- 10 个 commits\n- 新增 3 个节点文件\n- 新增 2 个专用 Tool 节点\n- 新增 10 个群文件操作\n\n### 🔗 链接\n- [GitHub](https://github.com/MY-Final/n8n-nodes-onebot-api)\n- [npm](https://www.npmjs.com/package/n8n-nodes-onebot-plus)\n- [AI Agent 使用指南](https://github.com/MY-Final/n8n-nodes-onebot-api/blob/main/README.AI-TOOLS.md)\n\n---\n**作者**: Final  \n**License**: MIT",
+  "draft": false,
+  "prerelease": false
+}
