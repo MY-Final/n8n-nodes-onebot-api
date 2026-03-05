@@ -50,7 +50,8 @@
 		"nodes": [
 			"dist/nodes/OneBot/OneBot.node.js",
 			"dist/nodes/OneBot/SendQQMessage.node.js",
-			"dist/nodes/OneBot/QQGroupManagement.node.js"
+			"dist/nodes/OneBot/QQGroupManagement.node.js",
+			"dist/nodes/OneBot/OneBotAITools.node.js"
 		]
 	},
 	"devDependencies": {

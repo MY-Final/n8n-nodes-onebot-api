@@ -52,7 +52,6 @@ export class OneBot implements INodeType {
 		group: ['transform'],
 		inputs: ['main'],
 		outputs: ['main'],
-		usableAsTool: true,
 		credentials: [
 			{
 				name: 'oneBotApi',
