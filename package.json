@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-onebot-plus",
-	"version": "1.0.1",
+	"version": "1.0.0",
 	"description": "OneBot node for n8n workflow",
 	"license": "MIT",
 	"homepage": "https://github.com/MY-Final/n8n-nodes-onebot-api",
