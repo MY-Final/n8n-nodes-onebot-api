@@ -45,73 +45,85 @@ export class OneBotAITools implements INodeType {
 					{
 						name: 'Get Login Info',
 						value: 'get_login_info',
-						description: 'Get bot login information',
+						description:
+							"Retrieve the bot's own login information including QQ number (uin), nickname, online status, etc. No parameters required.",
 						action: 'Get bot login info',
 					},
 					{
 						name: 'Get Friend List',
 						value: 'get_friend_list',
-						description: 'Get friend list',
+						description:
+							'Retrieve a complete list of the bot QQ friends. Returns friend QQ numbers and nicknames. No parameters required.',
 						action: 'Get friend list',
 					},
 					{
 						name: 'Get Stranger Info',
 						value: 'get_stranger_info',
-						description: 'Get stranger information',
+						description:
+							'Query detailed information about a specific QQ user (stranger). Requires user_id (QQ number). Returns nickname, sex, age, etc.',
 						action: 'Get stranger info',
 					},
 					{
 						name: 'Get Group List',
 						value: 'get_group_list',
-						description: 'Get group list',
+						description:
+							'Retrieve a list of all QQ groups the bot has joined. Returns group IDs and group names. No parameters required.',
 						action: 'Get group list',
 					},
 					{
 						name: 'Get Group Info',
 						value: 'get_group_info',
-						description: 'Get group information',
+						description:
+							'Get detailed information about a specific QQ group. Requires group_id. Returns group name, member count, owner info, etc.',
 						action: 'Get group info',
 					},
 					{
 						name: 'Get Group Member List',
 						value: 'get_group_member_list',
-						description: 'Get group member list',
+						description:
+							'Retrieve a complete list of members in a specific QQ group. Requires group_id. Returns member QQ numbers, nicknames, roles (owner/admin/member).',
 						action: 'Get group member list',
 					},
 					{
 						name: 'Get Group Member Info',
 						value: 'get_group_member_info',
-						description: 'Get group member information',
+						description:
+							'Get detailed information about a specific member in a QQ group. Requires group_id and user_id. Returns nickname, role, join time, etc.',
 						action: 'Get group member info',
 					},
 					{
 						name: 'Get Group Root Files',
 						value: 'get_group_root_files',
-						description: 'Get group root directory files',
+						description:
+							'Retrieve files from the root directory of a QQ group file system. Requires group_id. Optional: file_count (default 50). Returns file list and folder list.',
 						action: 'Get group root files',
 					},
 					{
 						name: 'Get Group Files By Folder',
 						value: 'get_group_files_by_folder',
-						description: 'Get files in group folder',
+						description:
+							'Retrieve files from a specific folder in a QQ group file system. Requires group_id and folder_id. Optional: file_count (default 50).',
 						action: 'Get group files by folder',
 					},
 					{
 						name: 'Get File Info',
 						value: 'get_file',
-						description: 'Get file information',
+						description:
+							'Get detailed information about a specific file in QQ group file system. Requires either file_id or file path. Returns file URL, size, name, base64, etc.',
 						action: 'Get file info',
 					},
 					{
 						name: 'Get Status',
 						value: 'get_status',
-						description: 'Get bot status',
+						description:
+							"Check the bot's current online status and connection statistics. Returns status (online/offline), statistics, and other runtime information.",
 						action: 'Get status',
 					},
 					{
 						name: 'Get Version Info',
 						value: 'get_version_info',
-						description: 'Get version information',
+						description:
+							'Retrieve version information about the bot and OneBot implementation. Returns app name, version, protocol version, etc.',
 						action: 'Get version info',
 					},
 				],
