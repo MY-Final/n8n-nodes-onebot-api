@@ -14,6 +14,30 @@ export const groupProperties: INodeProperties[] = [
 		noDataExpression: true,
 		options: [
 			{
+				name: 'Get Group Info',
+				value: 'get_group_info',
+				description: 'Get group information',
+				action: 'Get group info',
+			},
+			{
+				name: 'Get Group List',
+				value: 'get_group_list',
+				description: 'Get all groups the bot joined',
+				action: 'Get group list',
+			},
+			{
+				name: 'Get Group Member Info',
+				value: 'get_group_member_info',
+				description: 'Get information of a group member',
+				action: 'Get group member info',
+			},
+			{
+				name: 'Get Group Member List',
+				value: 'get_group_member_list',
+				description: 'Get group member list',
+				action: 'Get group member list',
+			},
+			{
 				name: 'Group Sign',
 				value: 'send_group_sign',
 				description: 'Send a group sign',
@@ -48,6 +72,12 @@ export const groupProperties: INodeProperties[] = [
 				value: 'set_group_admin',
 				description: 'Grant or revoke admin role of a user',
 				action: 'Set group admin',
+			},
+			{
+				name: 'Send Poke',
+				value: 'send_poke',
+				description: 'Send a poke to a group member',
+				action: 'Send poke in group',
 			},
 			{
 				name: 'Upload Group File',
@@ -129,7 +159,14 @@ export const groupProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['group_leave', 'send_group_sign'],
+				operation: [
+					'group_leave',
+					'send_group_sign',
+					'get_group_info',
+					'get_group_member_info',
+					'get_group_member_list',
+					'send_poke',
+				],
 				resource: ['group'],
 			},
 		},
@@ -168,7 +205,13 @@ export const groupProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['group'],
-				operation: ['mute_user', 'kick_user', 'set_group_admin'],
+				operation: [
+					'mute_user',
+					'kick_user',
+					'set_group_admin',
+					'get_group_member_info',
+					'send_poke',
+				],
 			},
 		},
 	},
