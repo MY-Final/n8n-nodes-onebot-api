@@ -6,9 +6,9 @@ import {
 	NodeOperationError,
 	INodeExecutionData,
 } from 'n8n-workflow';
-import { MuteUser, MuteAll } from './action/group-managements/Mute';
-import { KickUser } from './action/group-managements/Kick';
-import { SetAdmin } from './action/group-managements/SetAdmin';
+import { MuteUser, MuteAll } from '../OneBot/action/group-managements/Mute';
+import { KickUser } from '../OneBot/action/group-managements/Kick';
+import { SetAdmin } from '../OneBot/action/group-managements/SetAdmin';
 
 /**
  * QQ 群管理 Tool 节点
@@ -18,7 +18,7 @@ export class QQGroupManagement implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'QQ Group Management',
 		name: 'qqGroupManagement',
-		icon: 'file:onebot.svg',
+		icon: 'file:../OneBot/onebot.svg',
 		iconColor: 'black',
 		group: ['transform'],
 		version: 1,
@@ -47,24 +47,27 @@ export class QQGroupManagement implements INodeType {
 						name: 'Mute User',
 						value: 'mute_user',
 						description: 'Mute a group member for specified duration',
+						action: 'Mute a group member for specified duration',
 					},
 					{
 						name: 'Mute All',
 						value: 'mute_all',
 						description: 'Enable or disable mute all in the group',
+						action: 'Enable or disable mute all in the group',
 					},
 					{
 						name: 'Kick User',
 						value: 'kick_user',
 						description: 'Remove a member from the group',
+						action: 'Remove a member from the group',
 					},
 					{
 						name: 'Set Admin',
 						value: 'set_admin',
 						description: 'Grant or revoke admin role',
+						action: 'Grant or revoke admin role',
 					},
 				],
-				description: 'Choose the management action to perform',
 			},
 			{
 				displayName: 'Group ID',
@@ -88,7 +91,7 @@ export class QQGroupManagement implements INodeType {
 				description: 'QQ number of the user to manage',
 			},
 			{
-				displayName: 'Duration (seconds)',
+				displayName: 'Duration (Seconds)',
 				name: 'duration',
 				type: 'number',
 				default: 60,

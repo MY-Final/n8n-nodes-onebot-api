@@ -8,7 +8,12 @@ import {
 export class OneBotApi implements ICredentialType {
 	name = 'oneBotApi';
 	displayName = 'OneBot API';
-	documentationUrl = 'https://github.com/botuniverse/onebot-11/blob/master/communication/authorization.md';
+	icon = {
+		light: 'file:onebot.svg',
+		dark: 'file:onebot.dark.svg',
+	} as const;
+	documentationUrl =
+		'https://github.com/botuniverse/onebot-11/blob/master/communication/authorization.md';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Server',

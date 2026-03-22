@@ -108,6 +108,7 @@ export class OneBot implements INodeType {
 			...otherProperties,
 			...relationshipProperties,
 		],
+		usableAsTool: true,
 	};
 
 	methods = {

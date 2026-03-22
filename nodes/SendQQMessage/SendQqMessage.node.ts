@@ -6,7 +6,7 @@ import {
 	NodeOperationError,
 	INodeExecutionData,
 } from 'n8n-workflow';
-import { sendPrivateMsg, sendGroupMsg } from './action/message/SendMessage';
+import { sendPrivateMsg, sendGroupMsg } from '../OneBot/action/message/SendMessage';
 
 /**
  * 发送 QQ 消息 Tool 节点
@@ -15,8 +15,8 @@ import { sendPrivateMsg, sendGroupMsg } from './action/message/SendMessage';
 export class SendQQMessage implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Send QQ Message',
-		name: 'sendQQMessage',
-		icon: 'file:onebot.svg',
+		name: 'sendQqMessage',
+		icon: 'file:../OneBot/onebot.svg',
 		iconColor: 'black',
 		group: ['transform'],
 		version: 1,

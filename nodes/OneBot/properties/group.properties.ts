@@ -34,7 +34,6 @@ export const groupProperties: INodeProperties[] = [
 			{
 				name: 'Get Group Member List',
 				value: 'get_group_member_list',
-				description: 'Get group member list',
 				action: 'Get group member list',
 			},
 			{
@@ -68,16 +67,16 @@ export const groupProperties: INodeProperties[] = [
 				action: 'Mute user in group',
 			},
 			{
-				name: 'Set Admin',
-				value: 'set_group_admin',
-				description: 'Grant or revoke admin role of a user',
-				action: 'Set group admin',
-			},
-			{
 				name: 'Send Poke',
 				value: 'send_poke',
 				description: 'Send a poke to a group member',
 				action: 'Send poke in group',
+			},
+			{
+				name: 'Set Admin',
+				value: 'set_group_admin',
+				description: 'Grant or revoke admin role of a user',
+				action: 'Set group admin',
 			},
 			{
 				name: 'Upload Group File',
@@ -99,7 +98,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'managed_group_id',
 		type: 'options',
 		description:
-			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getManagedGroupList',
 		},
@@ -117,7 +116,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'managed_group_id',
 		type: 'options',
 		description:
-			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>.',
+			'Only shows groups where the bot is admin or owner. You can also specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getOwnedGroupList',
 		},
@@ -135,7 +134,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'group_ids',
 		type: 'multiOptions',
 		description:
-			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupList',
 		},
@@ -152,7 +151,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'group_id',
 		type: 'options',
 		description:
-			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupList',
 		},
@@ -177,7 +176,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'user_ids',
 		type: 'multiOptions',
 		description:
-			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
 			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
@@ -195,7 +194,7 @@ export const groupProperties: INodeProperties[] = [
 		name: 'user_id',
 		type: 'options',
 		description:
-			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
 			loadOptionsDependsOn: ['group_id', 'managed_group_id'],

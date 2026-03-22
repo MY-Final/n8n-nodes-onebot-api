@@ -43,13 +43,6 @@ export class OneBotAITools implements INodeType {
 				default: 'get_login_info',
 				options: [
 					{
-						name: 'Get Login Info',
-						value: 'get_login_info',
-						description:
-							"Retrieve the bot's own login information including QQ number (uin), nickname, online status, etc. No parameters required.",
-						action: 'Get bot login info',
-					},
-					{
 						name: 'Get Friend List',
 						value: 'get_friend_list',
 						description:
@@ -62,6 +55,13 @@ export class OneBotAITools implements INodeType {
 						description:
 							'Retrieve a list of all QQ groups the bot has joined. Returns group IDs and group names. No parameters required.',
 						action: 'Get group list',
+					},
+					{
+						name: 'Get Login Info',
+						value: 'get_login_info',
+						description:
+							"Retrieve the bot's own login information including QQ number (uin), nickname, online status, etc. No parameters required.",
+						action: 'Get bot login info',
 					},
 					{
 						name: 'Get Status',
