@@ -30,12 +30,10 @@ export async function checkBotGroupPermission(
 		const loginInfo = await apiRequest.call(executeFunctions, 'POST', API_PATHS.getLoginInfo);
 
 		if (!loginInfo?.data?.user_id) {
-			console.error('获取登录信息失败，无法检查权限');
 			return { isAdmin: false, isOwner: false, canOperate: false };
 		}
 
 		const botId = loginInfo.data.user_id;
-		console.log(`当前机器人QQ: ${botId}`);
 
 		// 2. 获取机器人在群中的信息
 		const query = { group_id: groupId, user_id: botId };
@@ -48,7 +46,6 @@ export async function checkBotGroupPermission(
 		);
 
 		if (!memberInfo?.data) {
-			console.error('获取群成员信息失败，无法检查权限');
 			return { isAdmin: false, isOwner: false, canOperate: false };
 		}
 
@@ -57,18 +54,13 @@ export async function checkBotGroupPermission(
 		const isOwner = role === 'owner';
 		const isAdmin = role === 'admin' || isOwner;
 
-		console.log(
-			`机器人在群 ${groupId} 中的角色: ${role}, 是管理员: ${isAdmin}, 是群主: ${isOwner}`,
-		);
-
 		return {
 			isAdmin,
 			isOwner,
 			canOperate: isAdmin, // 只有管理员或群主才能操作
 		};
 	} catch (error) {
-		console.error('检查权限时出错:', error instanceof Error ? error.message : String(error));
+		void error;
 		return { isAdmin: false, isOwner: false, canOperate: false };
 	}
 }
-
