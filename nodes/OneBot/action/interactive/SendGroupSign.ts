@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
@@ -13,7 +13,9 @@ export async function sendGroupSign(this: IExecuteFunctions, index: number): Pro
 	const group_id = this.getNodeParameter('group_id', index) as string | number;
 
 	if (!group_id) {
-		throw new Error('group_id is required');
+		throw new NodeOperationError(this.getNode(), 'group_id is required', {
+			itemIndex: index,
+		});
 	}
 
 	const body: IDataObject = {

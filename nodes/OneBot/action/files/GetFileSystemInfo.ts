@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 interface GetFileSystemInfoResponse {
@@ -72,7 +72,11 @@ export async function getFile(this: IExecuteFunctions, index: number): Promise<I
 	} catch {}
 
 	if (!file_id && !file) {
-		throw new Error('Please provide either file_id or file parameter');
+		throw new NodeOperationError(
+			this.getNode(),
+			'Please provide either file_id or file parameter',
+			{ itemIndex: index },
+		);
 	}
 
 	const body: IDataObject = {};
