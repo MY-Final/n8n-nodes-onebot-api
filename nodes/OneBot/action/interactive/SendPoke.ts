@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
@@ -9,11 +9,24 @@ import { API_PATHS } from '../../constants/apiPaths';
  * - 群组戳一戳：需要 user_id 和 group_id
  */
 export async function SendPoke(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	let user_id: number;
+	const rawUserIds = this.getNodeParameter('user_ids', index, []) as Array<string | number>;
+	const userIdsFromMulti = Array.isArray(rawUserIds)
+		? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
+		: [];
+
+	let user_id = Number.NaN;
 	try {
 		user_id = this.getNodeParameter('user_id', index) as number;
 	} catch {
 		user_id = Number(this.getNodeParameter('userId', index));
+	}
+
+	const targets =
+		userIdsFromMulti.length > 0 ? userIdsFromMulti : [user_id].filter(Number.isFinite);
+	if (targets.length === 0) {
+		throw new NodeOperationError(this.getNode(), '请至少选择一个目标用户（支持单选或多选）。', {
+			itemIndex: index,
+		});
 	}
 
 	// group_id 是可选的，只有在群组戳一戳时才需要
@@ -24,15 +37,33 @@ export async function SendPoke(this: IExecuteFunctions, index: number): Promise<
 		group_id = this.getNodeParameter('groupId', index, '') as number | string;
 	}
 
-	// 构建请求体，只有当 group_id 存在且不为空时才包含它
-	const body: IDataObject = {
-		user_id, // 必填
-	};
+	const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
 
-	// 如果提供了 group_id，则添加到请求体中（群组戳一戳）
-	if (group_id !== undefined && group_id !== null && group_id !== '') {
-		body.group_id = group_id;
+	for (const targetUserId of targets) {
+		const body: IDataObject = {
+			user_id: targetUserId,
+		};
+
+		if (group_id !== undefined && group_id !== null && group_id !== '') {
+			body.group_id = group_id;
+		}
+
+		try {
+			const data = await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
+			results.push({ user_id: targetUserId, ok: true, data });
+		} catch (error) {
+			results.push({
+				user_id: targetUserId,
+				ok: false,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 	}
 
-	return await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
+	return {
+		total: targets.length,
+		success: results.filter((r) => r.ok).length,
+		failed: results.filter((r) => !r.ok).length,
+		results,
+	};
 }

@@ -185,7 +185,7 @@ export const groupProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['group'],
-				operation: ['mute_user', 'kick_user'],
+				operation: ['mute_user', 'kick_user', 'set_group_admin', 'send_poke'],
 			},
 		},
 	},
@@ -200,7 +200,6 @@ export const groupProperties: INodeProperties[] = [
 			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
 		},
 		default: '',
-		required: true,
 		displayOptions: {
 			show: {
 				resource: ['group'],

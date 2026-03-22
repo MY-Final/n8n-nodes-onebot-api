@@ -38,10 +38,28 @@ export const friendProperties: INodeProperties[] = [
 
 	// user_id
 	{
+		displayName: 'User Names or IDs',
+		name: 'user_ids',
+		type: 'multiOptions',
+		description:
+			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		typeOptions: {
+			loadOptionsMethod: 'getFriendList',
+		},
+		default: [],
+		displayOptions: {
+			show: {
+				operation: ['send_like', 'send_poke'],
+				resource: ['friend'],
+			},
+		},
+	},
+	{
 		displayName: 'User Name or ID',
 		name: 'user_id',
 		type: 'options',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getFriendList',
 		},
