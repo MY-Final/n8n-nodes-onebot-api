@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
 
@@ -68,17 +68,21 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	// 检查机器人权限：只有管理员或群主才能踢人
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
-		throw new Error(
+		throw new NodeOperationError(
+			this.getNode(),
 			`机器人没有权限执行踢人操作。当前角色：${
 				permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
 			}，需要管理员或群主权限。`,
+			{ itemIndex: index },
 		);
 	}
 
 	// 执行踢人（多选优先，单选回退）
 	const targets = userIds.length > 0 ? userIds : singleUserId !== null ? [singleUserId] : [];
 	if (targets.length === 0) {
-		throw new Error('请至少选择一个成员进行踢出（支持多选或单选）。');
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行踢出（支持多选或单选）。', {
+			itemIndex: index,
+		});
 	}
 
 	const results: KickResult[] = [];
@@ -134,7 +138,9 @@ export async function LeaveGroup(this: IExecuteFunctions, index: number): Promis
 				].filter((v) => Number.isFinite(v));
 
 	if (targets.length === 0) {
-		throw new Error('请至少选择一个群组进行退出（支持多选或单选）。');
+		throw new NodeOperationError(this.getNode(), '请至少选择一个群组进行退出（支持多选或单选）。', {
+			itemIndex: index,
+		});
 	}
 
 	const results: LeaveGroupResult[] = [];

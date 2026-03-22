@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 import { checkBotGroupPermission } from '../../../utils/PermissionUtils';
 
@@ -61,17 +61,21 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	// 检查机器人权限：只有管理员或群主才能禁言其他用户
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
-		throw new Error(
+		throw new NodeOperationError(
+			this.getNode(),
 			`机器人没有权限执行禁言操作。当前角色：${
 				permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
 			}，需要管理员或群主权限。`,
+			{ itemIndex: index },
 		);
 	}
 
 	// 执行禁言（多选优先，单选回退）
 	const targets = userIds.length > 0 ? userIds : singleUserId !== null ? [singleUserId] : [];
 	if (targets.length === 0) {
-		throw new Error('请至少选择一个成员进行禁言（支持多选或单选）。');
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行禁言（支持多选或单选）。', {
+			itemIndex: index,
+		});
 	}
 
 	const results: MuteResult[] = [];
@@ -124,10 +128,12 @@ export async function MuteAll(this: IExecuteFunctions, index: number): Promise<I
 	// 检查机器人权限：只有管理员或群主才能设置全员禁言
 	const permission = await checkBotGroupPermission(this, group_id);
 	if (!permission.canOperate) {
-		throw new Error(
+		throw new NodeOperationError(
+			this.getNode(),
 			`机器人没有权限执行全员禁言操作。当前角色：${
 				permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
 			}，需要管理员或群主权限。`,
+			{ itemIndex: index },
 		);
 	}
 
