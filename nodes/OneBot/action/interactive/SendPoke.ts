@@ -9,10 +9,20 @@ import { API_PATHS } from '../../constants/apiPaths';
  * - 群组戳一戳：需要 user_id 和 group_id
  */
 export async function SendPoke(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const user_id = this.getNodeParameter('user_id', index) as number;
+	let user_id: number;
+	try {
+		user_id = this.getNodeParameter('user_id', index) as number;
+	} catch {
+		user_id = Number(this.getNodeParameter('userId', index));
+	}
 
 	// group_id 是可选的，只有在群组戳一戳时才需要
-	const group_id = this.getNodeParameter('group_id', index, '') as number | string;
+	let group_id: number | string;
+	try {
+		group_id = this.getNodeParameter('group_id', index, '') as number | string;
+	} catch {
+		group_id = this.getNodeParameter('groupId', index, '') as number | string;
+	}
 
 	// 构建请求体，只有当 group_id 存在且不为空时才包含它
 	const body: IDataObject = {

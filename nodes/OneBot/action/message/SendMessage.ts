@@ -59,8 +59,19 @@ export async function sendMsg(this: IExecuteFunctions, index: number): Promise<I
  */
 export async function sendPrivateMsg(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 	const message = this.getNodeParameter('message', index) as string | IDataObject[];
-	const user_id = this.getNodeParameter('user_id', index) as number;
-	const autoEscape = this.getNodeParameter('auto_escape', index, false) as boolean;
+	let user_id: number;
+	try {
+		user_id = this.getNodeParameter('user_id', index) as number;
+	} catch {
+		user_id = Number(this.getNodeParameter('userId', index));
+	}
+
+	let autoEscape = false;
+	try {
+		autoEscape = this.getNodeParameter('auto_escape', index, false) as boolean;
+	} catch {
+		autoEscape = this.getNodeParameter('autoEscape', index, false) as boolean;
+	}
 
 	const body: IDataObject = {
 		user_id,
@@ -79,8 +90,19 @@ export async function sendPrivateMsg(this: IExecuteFunctions, index: number): Pr
  */
 export async function sendGroupMsg(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 	const message = this.getNodeParameter('message', index) as string | IDataObject[];
-	const group_id = this.getNodeParameter('group_id', index) as number;
-	const autoEscape = this.getNodeParameter('auto_escape', index, false) as boolean;
+	let group_id: number;
+	try {
+		group_id = this.getNodeParameter('group_id', index) as number;
+	} catch {
+		group_id = Number(this.getNodeParameter('groupId', index));
+	}
+
+	let autoEscape = false;
+	try {
+		autoEscape = this.getNodeParameter('auto_escape', index, false) as boolean;
+	} catch {
+		autoEscape = this.getNodeParameter('autoEscape', index, false) as boolean;
+	}
 
 	const body: IDataObject = {
 		group_id,

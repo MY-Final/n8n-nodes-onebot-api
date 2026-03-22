@@ -74,6 +74,10 @@ const friendOperationHandlers: Record<string, OperationHandler> = {
 	delete_friend: DeleteFriend,
 };
 
+const relationshipOperationHandlers: Record<string, OperationHandler> = {
+	delete_friend: DeleteFriend,
+};
+
 const groupOperationHandlers: Record<string, OperationHandler> = {
 	get_group_info: async function (this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
@@ -135,9 +139,9 @@ function getOperationHandler(resource: string, operation: string): OperationHand
 		case 'misc':
 			return genericOperationHandlers[operation];
 		case 'other':
-		case 'relationship':
-			// 这些资源目前没有专用处理器，使用通用 API 调用
 			return undefined;
+		case 'relationship':
+			return relationshipOperationHandlers[operation];
 		default:
 			return undefined;
 	}

@@ -31,7 +31,11 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	try {
 		group_id = this.getNodeParameter('managed_group_id', index) as number;
 	} catch {
-		group_id = this.getNodeParameter('group_id', index) as number;
+		try {
+			group_id = this.getNodeParameter('group_id', index) as number;
+		} catch {
+			group_id = Number(this.getNodeParameter('groupId', index));
+		}
 	}
 
 	// 支持多选成员
@@ -50,7 +54,12 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 			singleUserId = Number(this.getNodeParameter('user_id', index));
 			if (isNaN(singleUserId)) singleUserId = null;
 		} catch {
-			singleUserId = null;
+			try {
+				singleUserId = Number(this.getNodeParameter('userId', index));
+				if (isNaN(singleUserId)) singleUserId = null;
+			} catch {
+				singleUserId = null;
+			}
 		}
 	}
 
@@ -112,7 +121,17 @@ export async function LeaveGroup(this: IExecuteFunctions, index: number): Promis
 	const targets =
 		groupIdsFromMulti.length > 0
 			? groupIdsFromMulti
-			: [Number(this.getNodeParameter('group_id', index))].filter((v) => Number.isFinite(v));
+			: [
+					Number(
+						(() => {
+							try {
+								return this.getNodeParameter('group_id', index);
+							} catch {
+								return this.getNodeParameter('groupId', index);
+							}
+						})(),
+					),
+				].filter((v) => Number.isFinite(v));
 
 	if (targets.length === 0) {
 		throw new Error('请至少选择一个群组进行退出（支持多选或单选）。');

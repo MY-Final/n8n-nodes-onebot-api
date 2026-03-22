@@ -24,7 +24,11 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	try {
 		group_id = this.getNodeParameter('managed_group_id', index) as number;
 	} catch {
-		group_id = this.getNodeParameter('group_id', index) as number;
+		try {
+			group_id = this.getNodeParameter('group_id', index) as number;
+		} catch {
+			group_id = Number(this.getNodeParameter('groupId', index));
+		}
 	}
 
 	// 支持多选成员
@@ -43,7 +47,12 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 			singleUserId = Number(this.getNodeParameter('user_id', index));
 			if (isNaN(singleUserId)) singleUserId = null;
 		} catch {
-			singleUserId = null;
+			try {
+				singleUserId = Number(this.getNodeParameter('userId', index));
+				if (isNaN(singleUserId)) singleUserId = null;
+			} catch {
+				singleUserId = null;
+			}
 		}
 	}
 
@@ -104,7 +113,11 @@ export async function MuteAll(this: IExecuteFunctions, index: number): Promise<I
 	try {
 		group_id = this.getNodeParameter('managed_group_id', index) as number;
 	} catch {
-		group_id = this.getNodeParameter('group_id', index) as number;
+		try {
+			group_id = this.getNodeParameter('group_id', index) as number;
+		} catch {
+			group_id = Number(this.getNodeParameter('groupId', index));
+		}
 	}
 	const enable = this.getNodeParameter('enable', index) as boolean;
 

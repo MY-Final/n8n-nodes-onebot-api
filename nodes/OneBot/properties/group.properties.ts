@@ -136,6 +136,24 @@ export const groupProperties: INodeProperties[] = [
 	},
 	// Fields for specific actions
 	{
+		displayName: 'User Names or IDs',
+		name: 'user_ids',
+		type: 'multiOptions',
+		description:
+			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+		typeOptions: {
+			loadOptionsMethod: 'getGroupMemberList',
+			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
+		},
+		default: [],
+		displayOptions: {
+			show: {
+				resource: ['group'],
+				operation: ['mute_user', 'kick_user'],
+			},
+		},
+	},
+	{
 		displayName: 'User Name or ID',
 		name: 'user_id',
 		type: 'options',
