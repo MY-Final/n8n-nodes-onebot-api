@@ -12,6 +12,24 @@ import {
 } from '../../utils/SearchUtils';
 import { API_PATHS } from '../constants/apiPaths';
 
+interface GroupInfo {
+	group_id: number | string;
+	group_name?: string;
+}
+
+interface GroupListResponse {
+	data?: GroupInfo[];
+}
+
+function parseGroupList(response: unknown): GroupInfo[] {
+	if (!response || typeof response !== 'object') {
+		return [];
+	}
+
+	const data = (response as GroupListResponse).data;
+	return Array.isArray(data) ? data : [];
+}
+
 export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 	try {
 		const currentInput = getCurrentInput(this, 'group_id', '');
@@ -19,19 +37,13 @@ export async function getGroupList(this: ILoadOptionsFunctions): Promise<INodePr
 		const hasSearch = hasSearchInput(currentInput);
 
 		const response = await apiRequest.call(this, 'POST', API_PATHS.getGroupList);
-		let groupData = [];
-
-		if (response && typeof response === 'object') {
-			if (response.data && Array.isArray(response.data)) {
-				groupData = response.data;
-			}
-		}
+		const groupData = parseGroupList(response);
 
 		if (!groupData || groupData.length === 0) {
 			return handleEmptyData(isValidGroupNumber, currentInput, '未找到群', 'group');
 		}
 
-		const groupOptions: SearchableOption[] = groupData.map((info: any) => {
+		const groupOptions: SearchableOption[] = groupData.map((info) => {
 			const groupId = info.group_id;
 			const groupName = info.group_name || '未知群名称';
 

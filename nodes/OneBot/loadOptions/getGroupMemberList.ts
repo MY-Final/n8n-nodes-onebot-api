@@ -28,13 +28,13 @@ export async function getGroupMemberList(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
 	try {
-		let group_id;
+		let group_id: string | number | null = null;
 		try {
-			group_id = this.getNodeParameter('group_id');
-		} catch (error) {
+			group_id = this.getNodeParameter('group_id') as string | number;
+		} catch {
 			try {
-				group_id = this.getNodeParameter('managed_group_id');
-			} catch (error) {
+				group_id = this.getNodeParameter('managed_group_id') as string | number;
+			} catch {
 				group_id = null;
 			}
 		}

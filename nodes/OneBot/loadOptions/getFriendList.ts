@@ -12,6 +12,25 @@ import {
 } from '../../utils/SearchUtils';
 import { API_PATHS } from '../constants/apiPaths';
 
+interface FriendInfo {
+	user_id: number | string;
+	nickname?: string;
+	remark?: string;
+}
+
+interface FriendListResponse {
+	data?: FriendInfo[];
+}
+
+function parseFriendList(response: unknown): FriendInfo[] {
+	if (!response || typeof response !== 'object') {
+		return [];
+	}
+
+	const data = (response as FriendListResponse).data;
+	return Array.isArray(data) ? data : [];
+}
+
 export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 	try {
 		const currentInput = getCurrentInput(this, 'user_id', '');
@@ -19,19 +38,13 @@ export async function getFriendList(this: ILoadOptionsFunctions): Promise<INodeP
 		const hasSearch = hasSearchInput(currentInput);
 
 		const response = await apiRequest.call(this, 'POST', API_PATHS.getFriendList);
-		let friendData = [];
-
-		if (response && typeof response === 'object') {
-			if (response.data && Array.isArray(response.data)) {
-				friendData = response.data;
-			}
-		}
+		const friendData = parseFriendList(response);
 
 		if (!friendData || friendData.length === 0) {
 			return handleEmptyData(isValidQQNumber, currentInput, '未找到好友', 'qq');
 		}
 
-		const friendOptions: SearchableOption[] = friendData.map((info: any) => {
+		const friendOptions: SearchableOption[] = friendData.map((info) => {
 			const userId = info.user_id;
 			const nickname = info.nickname || '未知昵称';
 			const remark = info.remark || '';

@@ -50,7 +50,7 @@ export async function getGroupRootFileList(
 			value: file.file_id,
 			description: `上传者：${file.uploader_name || '未知'}`,
 		}));
-	} catch (error) {
+	} catch {
 		return [{ name: '获取文件列表失败', value: '' }];
 	}
 }
@@ -104,7 +104,7 @@ export async function getGroupFileListByDirectory(
 			value: file.file_id,
 			description: `上传者：${file.uploader_name || '未知'}`,
 		}));
-	} catch (error) {
+	} catch {
 		return [{ name: '获取文件列表失败', value: '' }];
 	}
 }
@@ -144,7 +144,7 @@ export async function getGroupFileByFolderList(
 			value: file.file_id,
 			description: `上传者：${file.uploader_name || '未知'}`,
 		}));
-	} catch (error) {
+	} catch {
 		return [{ name: '获取文件列表失败', value: '' }];
 	}
 }
@@ -186,7 +186,7 @@ export async function getGroupRootFolderList(
 				description: `文件夹 ID: ${folder.folder_id}`,
 			})),
 		];
-	} catch (error) {
+	} catch {
 		return [{ name: '获取文件夹列表失败', value: '' }];
 	}
 }
@@ -228,7 +228,7 @@ export async function getAllGroupFolderList(
 				description: `文件夹 ID: ${folder.folder_id}`,
 			})),
 		];
-	} catch (error) {
+	} catch {
 		return [{ name: '获取文件夹列表失败', value: '' }];
 	}
 }
