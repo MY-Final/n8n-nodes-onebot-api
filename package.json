@@ -49,6 +49,7 @@
 		],
 		"nodes": [
 			"dist/nodes/OneBot/OneBot.node.js",
+			"dist/nodes/OneBotTrigger/OneBotTrigger.node.js",
 			"dist/nodes/SendQQMessage/SendQqMessage.node.js",
 			"dist/nodes/QQGroupManagement/QqGroupManagement.node.js",
 			"dist/nodes/OneBot/OneBotAiTools.node.js"
