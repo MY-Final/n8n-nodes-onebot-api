@@ -101,10 +101,28 @@ export const groupProperties: INodeProperties[] = [
 	},
 	// 退群需要所有群组
 	{
+		displayName: 'Group Names or IDs',
+		name: 'group_ids',
+		type: 'multiOptions',
+		description:
+			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+		typeOptions: {
+			loadOptionsMethod: 'getGroupList',
+		},
+		default: [],
+		displayOptions: {
+			show: {
+				operation: ['group_leave'],
+				resource: ['group'],
+			},
+		},
+	},
+	{
 		displayName: 'Group Name or ID',
 		name: 'group_id',
 		type: 'options',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupList',
 		},

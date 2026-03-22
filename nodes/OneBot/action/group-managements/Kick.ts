@@ -10,6 +10,13 @@ interface KickResult {
 	error?: string;
 }
 
+interface LeaveGroupResult {
+	group_id: number;
+	ok: boolean;
+	data?: IDataObject;
+	error?: string;
+}
+
 /**
  * 将指定用户踢出群聊
  * 必填字段：
@@ -97,15 +104,40 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
  * - group_id: number 群号
  */
 export async function LeaveGroup(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	let group_id: number;
-	try {
-		group_id = this.getNodeParameter('managed_group_id', index) as number;
-	} catch {
-		group_id = this.getNodeParameter('group_id', index) as number;
+	const rawGroupIds = this.getNodeParameter('group_ids', index, []) as Array<string | number>;
+	const groupIdsFromMulti = Array.isArray(rawGroupIds)
+		? rawGroupIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
+		: [];
+
+	const targets =
+		groupIdsFromMulti.length > 0
+			? groupIdsFromMulti
+			: [Number(this.getNodeParameter('group_id', index))].filter((v) => Number.isFinite(v));
+
+	if (targets.length === 0) {
+		throw new Error('请至少选择一个群组进行退出（支持多选或单选）。');
 	}
 
-	const body: IDataObject = { group_id };
+	const results: LeaveGroupResult[] = [];
 
-	const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
-	return data;
+	for (const group_id of targets) {
+		const body: IDataObject = { group_id };
+		try {
+			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
+			results.push({ group_id, ok: true, data });
+		} catch (error) {
+			results.push({
+				group_id,
+				ok: false,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+
+	return {
+		total: targets.length,
+		success: results.filter((r) => r.ok).length,
+		failed: results.filter((r) => !r.ok).length,
+		results,
+	};
 }
