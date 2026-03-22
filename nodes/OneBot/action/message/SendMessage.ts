@@ -13,7 +13,52 @@ interface LoginInfoResponse {
 
 interface MessageSegment {
 	type: string;
-	data?: Record<string, any>;
+	data?: IDataObject;
+}
+
+interface NewsItem {
+	text?: string;
+}
+
+interface NewsCollection {
+	newsItem?: NewsItem[];
+}
+
+function getOptionalStringParam(
+	context: IExecuteFunctions,
+	index: number,
+	name: string,
+	defaultValue = '',
+): string {
+	try {
+		return context.getNodeParameter(name, index, defaultValue) as string;
+	} catch {
+		return defaultValue;
+	}
+}
+
+function getOptionalBooleanParam(
+	context: IExecuteFunctions,
+	index: number,
+	name: string,
+	defaultValue = false,
+): boolean {
+	try {
+		return context.getNodeParameter(name, index, defaultValue) as boolean;
+	} catch {
+		return defaultValue;
+	}
+}
+
+function getOptionalNewsCollection(
+	context: IExecuteFunctions,
+	index: number,
+): NewsCollection | null {
+	try {
+		return context.getNodeParameter('news', index, null) as NewsCollection | null;
+	} catch {
+		return null;
+	}
 }
 
 interface ForwardNode {
@@ -123,21 +168,9 @@ function buildForwardNode(this: IExecuteFunctions, index: number, info: LoginInf
 	const content = this.getNodeParameter('message', index) as string | MessageSegment[];
 
 	// 优先使用每条消息自己的配置，其次使用全局配置
-	let useCustomSender = false;
-	let senderNickname = '';
-	let senderUin = '';
-
-	try {
-		useCustomSender = this.getNodeParameter('use_custom_sender', index, false) as boolean;
-	} catch {}
-
-	try {
-		senderNickname = this.getNodeParameter('sender_nickname', index, '') as string;
-	} catch {}
-
-	try {
-		senderUin = this.getNodeParameter('sender_uin', index, '') as string;
-	} catch {}
+	const useCustomSender = getOptionalBooleanParam(this, index, 'use_custom_sender', false);
+	const senderNickname = getOptionalStringParam(this, index, 'sender_nickname', '');
+	const senderUin = getOptionalStringParam(this, index, 'sender_uin', '');
 
 	const node: ForwardNode = {
 		type: 'node',
@@ -163,12 +196,10 @@ function buildForwardNode(this: IExecuteFunctions, index: number, info: LoginInf
 	}
 
 	// 可选的时间字段
-	try {
-		const time = this.getNodeParameter('time', index, '') as string;
-		if (time) {
-			node.data.time = time;
-		}
-	} catch {}
+	const time = getOptionalStringParam(this, index, 'time', '');
+	if (time) {
+		node.data.time = time;
+	}
 
 	return node;
 }
@@ -184,7 +215,7 @@ export async function sendPrivateForwardMsg(
 	const info = (response as LoginInfoResponse).data;
 
 	// 构建消息节点数组
-	const messages: ForwardNode[] = items.map((item, index) =>
+	const messages: ForwardNode[] = items.map((_item, index) =>
 		buildForwardNode.call(this, index, info),
 	);
 
@@ -194,32 +225,22 @@ export async function sendPrivateForwardMsg(
 	};
 
 	// 添加可选参数
-	try {
-		const source = this.getNodeParameter('source', 0, '') as string;
-		if (source) body.source = source;
-	} catch {}
+	const source = getOptionalStringParam(this, 0, 'source', '');
+	if (source) body.source = source;
 
-	try {
-		const summary = this.getNodeParameter('summary', 0, '') as string;
-		if (summary) body.summary = summary;
-	} catch {}
+	const summary = getOptionalStringParam(this, 0, 'summary', '');
+	if (summary) body.summary = summary;
 
-	try {
-		const prompt = this.getNodeParameter('prompt', 0, '') as string;
-		if (prompt) body.prompt = prompt;
-	} catch {}
+	const prompt = getOptionalStringParam(this, 0, 'prompt', '');
+	if (prompt) body.prompt = prompt;
 
-	try {
-		const news = this.getNodeParameter('news', 0, null) as any;
-		if (news && news.newsItem && Array.isArray(news.newsItem) && news.newsItem.length > 0) {
-			body.news = news.newsItem;
-		}
-	} catch {}
+	const news = getOptionalNewsCollection(this, 0);
+	if (news?.newsItem?.length) {
+		body.news = news.newsItem;
+	}
 
-	try {
-		const autoEscape = this.getNodeParameter('auto_escape', 0, false) as boolean;
-		if (autoEscape) body.auto_escape = true;
-	} catch {}
+	const autoEscape = getOptionalBooleanParam(this, 0, 'auto_escape', false);
+	if (autoEscape) body.auto_escape = true;
 
 	return apiRequest.call(this, 'POST', API_PATHS.sendPrivateForwardMsg, body);
 }
@@ -235,7 +256,7 @@ export async function sendGroupForwardMsg(
 	const info = (response as LoginInfoResponse).data;
 
 	// 构建消息节点数组
-	const messages: ForwardNode[] = items.map((item, index) =>
+	const messages: ForwardNode[] = items.map((_item, index) =>
 		buildForwardNode.call(this, index, info),
 	);
 
@@ -245,32 +266,22 @@ export async function sendGroupForwardMsg(
 	};
 
 	// 添加可选参数
-	try {
-		const source = this.getNodeParameter('source', 0, '') as string;
-		if (source) body.source = source;
-	} catch {}
+	const source = getOptionalStringParam(this, 0, 'source', '');
+	if (source) body.source = source;
 
-	try {
-		const summary = this.getNodeParameter('summary', 0, '') as string;
-		if (summary) body.summary = summary;
-	} catch {}
+	const summary = getOptionalStringParam(this, 0, 'summary', '');
+	if (summary) body.summary = summary;
 
-	try {
-		const prompt = this.getNodeParameter('prompt', 0, '') as string;
-		if (prompt) body.prompt = prompt;
-	} catch {}
+	const prompt = getOptionalStringParam(this, 0, 'prompt', '');
+	if (prompt) body.prompt = prompt;
 
-	try {
-		const news = this.getNodeParameter('news', 0, null) as any;
-		if (news && news.newsItem && Array.isArray(news.newsItem) && news.newsItem.length > 0) {
-			body.news = news.newsItem;
-		}
-	} catch {}
+	const news = getOptionalNewsCollection(this, 0);
+	if (news?.newsItem?.length) {
+		body.news = news.newsItem;
+	}
 
-	try {
-		const autoEscape = this.getNodeParameter('auto_escape', 0, false) as boolean;
-		if (autoEscape) body.auto_escape = true;
-	} catch {}
+	const autoEscape = getOptionalBooleanParam(this, 0, 'auto_escape', false);
+	if (autoEscape) body.auto_escape = true;
 
 	return apiRequest.call(this, 'POST', API_PATHS.sendGroupForwardMsg, body);
 }

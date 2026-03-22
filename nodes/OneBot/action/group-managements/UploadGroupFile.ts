@@ -37,24 +37,33 @@ export async function uploadGroupFile(
 	};
 
 	// 可选参数：父目录 ID
+	let folder = '';
 	try {
-		const folder = this.getNodeParameter('folder', index, '') as string;
-		if (folder) {
-			body.folder = folder;
-		}
-	} catch {}
+		folder = this.getNodeParameter('folder', index, '') as string;
+	} catch {
+		folder = '';
+	}
+	if (folder) {
+		body.folder = folder;
+	}
 
+	let folder_id = '';
 	try {
-		const folder_id = this.getNodeParameter('folder_id', index, '') as string;
-		if (folder_id) {
-			body.folder_id = folder_id;
-		}
-	} catch {}
+		folder_id = this.getNodeParameter('folder_id', index, '') as string;
+	} catch {
+		folder_id = '';
+	}
+	if (folder_id) {
+		body.folder_id = folder_id;
+	}
 
+	let upload_file = true;
 	try {
-		const upload_file = this.getNodeParameter('upload_file', index, true) as boolean;
-		body.upload_file = upload_file;
-	} catch {}
+		upload_file = this.getNodeParameter('upload_file', index, true) as boolean;
+	} catch {
+		upload_file = true;
+	}
+	body.upload_file = upload_file;
 
 	return apiRequest.call(this, 'POST', API_PATHS.uploadGroupFile, body) as Promise<
 		IDataObject & {

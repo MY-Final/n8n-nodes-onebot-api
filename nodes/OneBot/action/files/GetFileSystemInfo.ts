@@ -65,11 +65,15 @@ export async function getFile(this: IExecuteFunctions, index: number): Promise<I
 
 	try {
 		file_id = this.getNodeParameter('file_id', index, '') as string;
-	} catch {}
+	} catch {
+		file_id = '';
+	}
 
 	try {
 		file = this.getNodeParameter('file', index, '') as string;
-	} catch {}
+	} catch {
+		file = '';
+	}
 
 	if (!file_id && !file) {
 		throw new NodeOperationError(

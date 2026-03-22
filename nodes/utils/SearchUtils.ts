@@ -29,7 +29,7 @@ export function getCurrentInput(
 	try {
 		const value = loadOptions.getNodeParameter(paramName, defaultValue) as string;
 		return value || '';
-	} catch (error) {
+	} catch {
 		// 无法获取当前值，返回默认值
 		return defaultValue;
 	}
@@ -133,9 +133,7 @@ export function filterOptions(
  * @param options - 带搜索值的选项列表
  * @returns 清理后的选项列表
  */
-export function cleanSearchValues(
-	options: SearchableOption[],
-): INodePropertyOptions[] {
+export function cleanSearchValues(options: SearchableOption[]): INodePropertyOptions[] {
 	return options.map(({ name, value, description }) => ({
 		name,
 		value,
@@ -186,7 +184,7 @@ export function handleError(
 	errorMessage: string,
 	type: 'qq' | 'group' = 'qq',
 ): INodePropertyOptions[] {
-	console.error(errorMessage, error instanceof Error ? error.message : String(error));
+	void error;
 
 	if (isValidNumber(currentInput)) {
 		return [createDirectUseOption(currentInput, type)];
@@ -234,4 +232,3 @@ export function processSearchAndFilter(
 
 	return filteredOptions.length > 0 ? filteredOptions : options;
 }
-
