@@ -1,31 +1,33 @@
 # n8n-nodes-onebot-plus
 
-🤖 **功能强大的 OneBot QQ 机器人 n8n 社区节点**
+Powerful OneBot v11 nodes for n8n workflows.
 
-支持完整的 OneBot v11 协议，让 n8n 工作流可以控制 QQ 机器人。支持消息发送、群管理、文件上传、AI Agent 调用等功能。
+This package lets n8n talk to QQ bots through OneBot HTTP API, including message sending, group management, group files, AI-tool friendly nodes, and now HTTP callback trigger events.
 
 [![npm](https://img.shields.io/npm/v/n8n-nodes-onebot-plus)](https://www.npmjs.com/package/n8n-nodes-onebot-plus)
 [![GitHub](https://img.shields.io/github/license/MY-Final/n8n-nodes-onebot-api)](https://github.com/MY-Final/n8n-nodes-onebot-api)
 
-[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
+## Contents
 
-[Installation](#installation)  
-[Operations](#operations)  
-[AI Agent 支持](#ai-agent-支持)  
-[Credentials](#credentials)  
-[Compatibility](#compatibility)  
-[Usage](#usage)  
-[Resources](#resources)
+- [Highlights](#highlights)
+- [Installation](#installation)
+- [Node List](#node-list)
+- [Supported Operations](#supported-operations)
+- [Batch Capability](#batch-capability)
+- [OneBot Trigger (HTTP Callback)](#onebot-trigger-http-callback)
+- [Credentials](#credentials)
+- [Compatibility](#compatibility)
+- [Development](#development)
+- [Resources](#resources)
 
-## ✨ 特性亮点
+## Highlights
 
-- 🚀 **完整的 OneBot v11 支持** - 覆盖所有常用 API
-- 🤖 **AI Agent 完全兼容** - 支持 n8n AI Agent 的 Tool 调用
-- 📁 **群文件管理** - 上传、下载、移动、删除群文件
-- 👥 **群管理功能** - 禁言、踢人、设置管理员
-- 💬 **消息发送** - 支持私聊、群聊、合并转发
-- 🎨 **富媒体消息** - 支持图片、表情、文件等
-- 🔒 **安全认证** - 支持 Access Token 认证
+- Full OneBot v11 workflow node (resource + operation model)
+- OneBot Trigger node for HTTP event callbacks
+- Group file management (upload/list/move/rename/delete)
+- AI Agent friendly tool nodes
+- Batch operations for high-frequency actions
+- Access token verification support
 
 ## Installation
 
@@ -33,195 +35,145 @@
 npm install n8n-nodes-onebot-plus
 ```
 
-或者通过 n8n 的社区节点管理界面安装。
+Or install from n8n Community Nodes UI.
 
-## Operations
+## Node List
 
-### 🤖 Bot (机器人)
+- `OneBot` (main all-in-one node)
+- `OneBot Trigger` (receive HTTP callback events)
+- `Send QQ Message` (AI-friendly message tool)
+- `QQ Group Management` (AI-friendly group tool)
+- `OneBot AI Tools` (query-only tools)
 
-- **Get Login Info** - 获取机器人登录信息
+## Supported Operations
 
-### 👥 Friend (好友)
+### Bot
 
-- **Get Friend List** - 获取好友列表
-- **Get Stranger Info** - 获取陌生人信息
-- **Send Like** - 发送点赞
-- **Send Poke** - 发送戳一戳
-- **Delete Friend** - 删除好友
+- Get Login Info
 
-### 👨‍👩‍👧‍👦 Group (群聊)
+### Friend
 
-- **Get Group Info** - 获取群信息
-- **Get Group List** - 获取群列表
-- **Get Group Member Info** - 获取群成员信息
-- **Get Group Member List** - 获取群成员列表
-- **Mute User** - 禁言用户
-- **Mute All** - 全体禁言
-- **Kick User** - 踢出用户
-- **Leave Group** - 退出群聊
-- **Set Admin** - 设置管理员
-- **Send Poke** - 发送戳一戳
-- **Group Sign** - 群打卡
+- Get Friend List
+- Get Stranger Info
+- Send Like
+- Send Poke
 
-### 📁 Files (群文件) 🆕
+### Group
 
-- **Upload Group File** - 上传群文件
-- **Get Group Root Files** - 获取根目录文件列表
-- **Get Group Files By Folder** - 获取子目录文件列表
-- **Get Group File System Info** - 获取文件系统信息
-- **Get File Info** - 获取文件信息
-- **Create Group File Folder** - 创建文件夹
-- **Delete Group File** - 删除文件
-- **Delete Group Folder** - 删除文件夹
-- **Move Group File** - 移动文件
-- **Rename Group File** - 重命名文件
+- Get Group Info
+- Get Group List
+- Get Group Member Info
+- Get Group Member List
+- Mute User
+- Mute All
+- Kick User
+- Leave Group
+- Set Admin
+- Send Poke
+- Group Sign
+- Upload Group File
 
-### 💬 Message (消息)
+### Files
 
-- **Send Message** - 发送消息（统一接口）
-- **Send Private Message** - 发送私聊消息
-- **Send Group Message** - 发送群消息
-- **Forward Mode** - 合并转发（支持多发送者）
+- Upload Group File
+- Get Group Root Files
+- Get Group Files By Folder
+- Get Group File System Info
+- Get File Info
+- Create Group File Folder
+- Delete Group File
+- Delete Group Folder
+- Move Group File
+- Rename Group File
 
-### 🔧 Other (其他)
+### Relationship
 
-- **Get Status** - 获取状态
-- **Get Version Info** - 获取版本信息
+- Delete Friend
+- Optional temp block
+- Optional both-side delete
 
-## 🤖 AI Agent 支持
+### Other
 
-### 专用 Tool 节点
+- Get Status
+- Get Version Info
 
-本节点包包含专为 AI Agent 设计的简化接口：
+## Batch Capability
 
-#### 1. Send QQ Message
+The package now supports single + multi target in a consistent pattern.
 
-用于发送 QQ 消息的简化节点，AI 友好的参数结构。
+- `delete_friend`: supports `user_ids` multi-select (with summary output)
+- `group_leave`: supports `group_ids` multi-select (continue on partial failure)
+- `set_group_admin`: supports `user_ids` multi-select
+- `send_like`: supports `user_ids` multi-select
+- `send_poke` (friend/group): supports `user_ids` multi-select
+- `mute_user` / `kick_user`: supports `user_ids` multi-select
 
-**参数：**
+Batch actions process all targets and return aggregate fields like `total`, `success`, `failed`, and per-target details.
 
-- `messageType`: 消息类型（private/group）
-- `userId`: 用户 QQ（私聊时）
-- `groupId`: 群号（群聊时）
-- `message`: 消息内容
-- `autoEscape`: 是否纯文本发送
+## OneBot Trigger (HTTP Callback)
 
-#### 2. QQ Group Management
+`OneBot Trigger` is designed for OneBot event push over HTTP.
 
-群管理专用节点，支持禁言、踢人、设置管理员等操作。
+### What it does
 
-**参数：**
+- Receives `POST` callback payloads
+- Filters by event `post_type` (`message`, `notice`, `request`, `meta_event`)
+- Optional token verification:
+  - `x-onebot-token`
+  - `Authorization: Bearer <token>`
+- Outputs normalized fields and optional raw payload
 
-- `action`: 操作类型（mute_user/mute_all/kick_user/set_admin）
-- `groupId`: 群号
-- `userId`: 用户 QQ
-- `duration`: 禁言时长（秒）
-- `enable`: 启用/禁用
+### Quick setup
 
-### 在 AI Agent 中使用
-
-1. 创建 n8n AI Agent 节点
-2. 配置 LLM（OpenAI、Claude 等）
-3. 在 Tools 部分添加 OneBot 节点
-4. 配置 OneBot API 凭证
-5. 开始使用自然语言调用
-
-**示例：**
-
-```
-用户："在群里发个消息说大家好"
-→ AI 自动调用 SendQQMessage Tool
-→ 发送成功
-```
+1. Add `OneBot Trigger` to a workflow and activate it
+2. Copy the webhook URL
+3. Configure your OneBot implementation to push events to this URL
+4. (Optional) Enable token verification and set the same token on both sides
 
 ## Credentials
 
-需要配置 OneBot API 的 Access Token 进行认证。
+Create `OneBot API` credentials in n8n:
 
-**配置步骤：**
+- Server URL (example: `http://127.0.0.1:5700`)
+- Access Token (if enabled on your OneBot implementation)
 
-1. 在 n8n 中创建新的 OneBot API 凭证
-2. 输入 Server URL（如：`http://127.0.0.1:5700`）
-3. 输入 Access Token（如果 OneBot 配置了）
-4. 测试连接
+The credential includes authentication headers and a connection test request.
 
 ## Compatibility
 
-支持的 OneBot 实现：
+Tested/targeted OneBot v11 implementations:
 
-- ✅ **go-cqhttp** v1.1.0+
-- ✅ **NapCat** (NapCat-All)
-- ✅ **Lagrange.Core**
-- ✅ **LLBot**
-- ✅ 其他兼容 OneBot v11 的实现
+- go-cqhttp
+- NapCat
+- Lagrange.Core
+- LLBot
+- Other OneBot v11 compatible servers
 
-## Usage
-
-### 基本使用
-
-1. **配置凭证** - 设置 OneBot API 的 Access Token
-2. **选择资源** - 选择要操作的资源类型（Bot、Friend、Group 等）
-3. **选择操作** - 选择具体的操作
-4. **填写参数** - 根据提示填写必要参数
-5. **运行工作流**
-
-### 示例工作流
-
-#### 示例 1：自动回复
-
-```
-Webhook → OneBot (接收消息) → IF 判断 → OneBot (发送回复)
-```
-
-#### 示例 2：群管理自动化
-
-```
-定时触发 → OneBot (获取群成员) → 过滤 → OneBot (踢出不活跃成员)
-```
-
-#### 示例 3：文件自动上传
-
-```
-Google Drive (新文件) → OneBot (上传到群文件)
-```
-
-## Resources
-
-- [n8n community nodes documentation](https://docs.n8n.io/integrations/community-nodes/)
-- [OneBot v11 协议文档](https://11.onebot.dev/)
-- [go-cqhttp 文档](https://docs.go-cqhttp.org/)
-- [NapCat 文档](https://napcat.dev/)
-- [GitHub 仓库](https://github.com/MY-Final/n8n-nodes-onebot-api)
-- [npm 包](https://www.npmjs.com/package/n8n-nodes-onebot-plus)
-- [AI Agent 使用指南](./README.AI-TOOLS.md)
-
-## 开发说明
-
-### 构建
+## Development
 
 ```bash
+npm install
+npm run format
+npm run lint
 npm run build
 ```
 
-### 开发模式
+Other useful commands:
 
-```bash
-npm run dev
-```
+- `npm run dev`
+- `npm run lint:fix`
+- `npm run build:watch`
 
-### 代码规范
+## Resources
 
-```bash
-npm run lint
-npm run format
-```
+- [n8n community nodes docs](https://docs.n8n.io/integrations/community-nodes/)
+- [OneBot v11 docs](https://11.onebot.dev/)
+- [go-cqhttp docs](https://docs.go-cqhttp.org/)
+- [NapCat docs](https://napcat.dev/)
+- [GitHub Repository](https://github.com/MY-Final/n8n-nodes-onebot-api)
+- [npm Package](https://www.npmjs.com/package/n8n-nodes-onebot-plus)
+- [AI tools guide](./README.AI-TOOLS.md)
 
 ## License
 
-MIT License
-
----
-
-**作者：** Final  
-**邮箱：** mydj666@qq.com  
-**GitHub：** [@MY-Final](https://github.com/MY-Final)
+MIT
