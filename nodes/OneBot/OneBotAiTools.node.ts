@@ -13,7 +13,7 @@ import { API_PATHS } from './constants/apiPaths';
  * AI Agent 专用查询工具节点
  * 只包含无需参数的安全查询操作，不包含写操作
  */
-export class OneBotAITools implements INodeType {
+export class OneBotAiTools implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'OneBot AI Tools',
 		name: 'oneBotAiTools',

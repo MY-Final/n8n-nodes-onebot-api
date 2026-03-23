@@ -12,7 +12,7 @@ import { sendPrivateMsg, sendGroupMsg } from '../OneBot/action/message/SendMessa
  * 发送 QQ 消息 Tool 节点
  * 专为 AI Agent 设计的简化接口
  */
-export class SendQQMessage implements INodeType {
+export class SendQqMessage implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Send QQ Message',
 		name: 'sendQqMessage',

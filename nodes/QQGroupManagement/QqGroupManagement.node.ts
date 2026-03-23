@@ -14,7 +14,7 @@ import { SetAdmin } from '../OneBot/action/group-managements/SetAdmin';
  * QQ 群管理 Tool 节点
  * 专为 AI Agent 设计的简化接口
  */
-export class QQGroupManagement implements INodeType {
+export class QqGroupManagement implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'QQ Group Management',
 		name: 'qqGroupManagement',
