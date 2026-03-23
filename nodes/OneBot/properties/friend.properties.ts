@@ -66,7 +66,7 @@ export const friendProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['send_private_msg', 'get_stranger_info', 'send_like', 'send_poke'],
+				operation: ['send_private_msg', 'get_stranger_info'],
 				resource: ['friend'],
 			},
 		},

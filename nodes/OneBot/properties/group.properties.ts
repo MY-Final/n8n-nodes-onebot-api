@@ -203,13 +203,7 @@ export const groupProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['group'],
-				operation: [
-					'mute_user',
-					'kick_user',
-					'set_group_admin',
-					'get_group_member_info',
-					'send_poke',
-				],
+				operation: ['mute_user', 'kick_user', 'set_group_admin', 'get_group_member_info'],
 			},
 		},
 	},
