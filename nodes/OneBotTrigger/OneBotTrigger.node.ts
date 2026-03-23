@@ -3,8 +3,6 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	ITriggerFunctions,
-	ITriggerResponse,
 	IWebhookFunctions,
 	IWebhookResponseData,
 } from 'n8n-workflow';
@@ -189,12 +187,6 @@ export class OneBotTrigger implements INodeType {
 		],
 		usableAsTool: true,
 	};
-
-	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
-		return {
-			closeFunction: async () => {},
-		};
-	}
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const event = this.getBodyData() as OneBotEvent;
