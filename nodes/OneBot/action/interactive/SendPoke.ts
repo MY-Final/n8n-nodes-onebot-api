@@ -14,12 +14,8 @@ export async function SendPoke(this: IExecuteFunctions, index: number): Promise<
 		? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
 		: [];
 
-	let user_id = Number.NaN;
-	try {
-		user_id = this.getNodeParameter('user_id', index) as number;
-	} catch {
-		user_id = Number(this.getNodeParameter('userId', index));
-	}
+	const legacyUserId = this.getNodeParameter('userId', index, '') as string | number;
+	const user_id = Number(this.getNodeParameter('user_id', index, legacyUserId) as string | number);
 
 	const targets =
 		userIdsFromMulti.length > 0 ? userIdsFromMulti : [user_id].filter(Number.isFinite);
