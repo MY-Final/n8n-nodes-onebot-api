@@ -11,6 +11,7 @@ import {
 
 interface OneBotEvent extends IDataObject {
 	post_type?: string;
+	postType?: string;
 	message_type?: string;
 	notice_type?: string;
 	request_type?: string;
@@ -22,8 +23,30 @@ interface OneBotEvent extends IDataObject {
 	time?: number;
 }
 
+function normalizeType(value: unknown): string | undefined {
+	if (typeof value !== 'string') {
+		return undefined;
+	}
+
+	const normalized = value.trim().toLowerCase();
+	return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeSelectedTypes(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value
+			.map((item) => normalizeType(item))
+			.filter((item): item is string => item !== undefined);
+	}
+
+	const singleType = normalizeType(value);
+	return singleType ? [singleType] : [];
+}
+
 function getDetailType(event: OneBotEvent): string {
-	switch (event.post_type) {
+	const postType = normalizeType(event.post_type ?? event.postType);
+
+	switch (postType) {
 		case 'message':
 			return event.message_type ?? 'unknown';
 		case 'notice':
@@ -38,8 +61,9 @@ function getDetailType(event: OneBotEvent): string {
 }
 
 function buildOutput(event: OneBotEvent, includeRaw: boolean): IDataObject {
+	const postType = normalizeType(event.post_type ?? event.postType) ?? 'unknown';
 	const normalized: IDataObject = {
-		postType: event.post_type ?? 'unknown',
+		postType,
 		detailType: getDetailType(event),
 		selfId: event.self_id,
 		userId: event.user_id,
@@ -175,8 +199,23 @@ export class OneBotTrigger implements INodeType {
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const event = this.getBodyData() as OneBotEvent;
 
-		const selectedTypes = this.getNodeParameter('events', []) as string[];
-		if (!matchesPostType(selectedTypes, event.post_type)) {
+		const selectedTypes = normalizeSelectedTypes(this.getNodeParameter('events', []));
+		const currentPostType = normalizeType(event.post_type ?? event.postType);
+		if (!matchesPostType(selectedTypes, currentPostType)) {
+			if (this.getMode() === 'manual') {
+				const debugData = this.helpers.returnJsonArray({
+					matched: false,
+					reason: 'post_type does not match selected Events filter',
+					receivedPostType: currentPostType ?? 'unknown',
+					selectedTypes,
+					raw: event,
+				});
+
+				return {
+					workflowData: [debugData],
+				};
+			}
+
 			return {
 				workflowData: [[]],
 			};
@@ -191,6 +230,19 @@ export class OneBotTrigger implements INodeType {
 			const incomingToken = oneBotToken || authToken;
 
 			if (!expectedToken || incomingToken !== expectedToken) {
+				if (this.getMode() === 'manual') {
+					const debugData = this.helpers.returnJsonArray({
+						matched: false,
+						reason: 'token verification failed',
+						expectedTokenConfigured: Boolean(expectedToken),
+						hasIncomingToken: Boolean(incomingToken),
+					});
+
+					return {
+						workflowData: [debugData],
+					};
+				}
+
 				return {
 					workflowData: [[]],
 				};
