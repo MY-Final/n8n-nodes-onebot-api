@@ -11,14 +11,23 @@ interface OneBotEvent extends IDataObject {
 	post_type?: string;
 	postType?: string;
 	message_type?: string;
+	messageType?: string;
 	notice_type?: string;
+	noticeType?: string;
 	request_type?: string;
+	requestType?: string;
 	meta_event_type?: string;
+	metaEventType?: string;
 	self_id?: number;
+	selfId?: number;
 	user_id?: number;
+	userId?: number;
 	group_id?: number;
+	groupId?: number;
 	message_id?: number;
+	messageId?: number;
 	time?: number;
+	timestamp?: number;
 }
 
 function normalizeType(value: unknown): string | undefined {
@@ -46,13 +55,13 @@ function getDetailType(event: OneBotEvent): string {
 
 	switch (postType) {
 		case 'message':
-			return event.message_type ?? 'unknown';
+			return normalizeType(event.message_type ?? event.messageType) ?? 'unknown';
 		case 'notice':
-			return event.notice_type ?? 'unknown';
+			return normalizeType(event.notice_type ?? event.noticeType) ?? 'unknown';
 		case 'request':
-			return event.request_type ?? 'unknown';
+			return normalizeType(event.request_type ?? event.requestType) ?? 'unknown';
 		case 'meta_event':
-			return event.meta_event_type ?? 'unknown';
+			return normalizeType(event.meta_event_type ?? event.metaEventType) ?? 'unknown';
 		default:
 			return 'unknown';
 	}
@@ -63,11 +72,11 @@ function buildOutput(event: OneBotEvent, includeRaw: boolean): IDataObject {
 	const normalized: IDataObject = {
 		postType,
 		detailType: getDetailType(event),
-		selfId: event.self_id,
-		userId: event.user_id,
-		groupId: event.group_id,
-		messageId: event.message_id,
-		timestamp: event.time,
+		selfId: event.self_id ?? event.selfId,
+		userId: event.user_id ?? event.userId,
+		groupId: event.group_id ?? event.groupId,
+		messageId: event.message_id ?? event.messageId,
+		timestamp: event.time ?? event.timestamp,
 	};
 
 	if (!includeRaw) {
@@ -93,6 +102,10 @@ function matchesPostType(selectedTypes: string[], currentType?: string): boolean
 }
 
 function parseHeaderToken(headerValue: unknown): string {
+	if (Array.isArray(headerValue)) {
+		return parseHeaderToken(headerValue[0]);
+	}
+
 	if (typeof headerValue !== 'string') {
 		return '';
 	}
