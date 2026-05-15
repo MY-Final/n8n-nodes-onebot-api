@@ -25,8 +25,7 @@ export const relationshipProperties: INodeProperties[] = [
 		displayName: 'User Names or IDs',
 		name: 'user_ids',
 		type: 'multiOptions',
-		description:
-			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+		description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		typeOptions: {
 			loadOptionsMethod: 'getFriendList',
 		},

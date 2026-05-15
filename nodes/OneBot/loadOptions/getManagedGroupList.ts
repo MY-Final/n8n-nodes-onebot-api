@@ -52,13 +52,13 @@ export async function getManagedGroupList(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
 	try {
-		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as LoginInfoResponse;
+		const loginInfo = (await apiRequest.call(this, 'POST', 'get_login_info')) as LoginInfoResponse;
 		if (!loginInfo?.data?.user_id) {
 			return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
 		}
 
 		const botId = loginInfo.data.user_id;
-		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as
+		const groupListResponse = (await apiRequest.call(this, 'POST', 'get_group_list')) as
 			| GroupListResponse
 			| GroupRecord[];
 
@@ -86,7 +86,7 @@ export async function getManagedGroupList(
 				const query = { group_id: group.id, user_id: botId };
 				const memberInfo = (await apiRequest.call(
 					this,
-					'GET',
+					'POST',
 					'get_group_member_info',
 					undefined,
 					query,

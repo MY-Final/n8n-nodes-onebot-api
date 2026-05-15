@@ -18,7 +18,7 @@ export type OneBotMap = {
 		| 'delete_group_folder'
 		| 'move_group_file'
 		| 'rename_group_file';
-	friend: 'get_stranger_info' | 'get_friend_list' | 'send_like' | 'send_poke' | 'delete_friend';
+	friend: 'get_stranger_info' | 'get_friend_list' | 'send_like' | 'send_poke';
 	group:
 		| 'get_group_info'
 		| 'get_group_list'
@@ -27,14 +27,14 @@ export type OneBotMap = {
 		| 'send_poke'
 		| 'mute_user'
 		| 'mute_all'
-		| 'set_group_ban'
-		| 'set_group_whole_ban'
 		| 'kick_user'
 		| 'group_leave'
-		| 'set_group_admin';
+		| 'set_group_admin'
+		| 'upload_group_file'
+		| 'send_group_sign';
 	message: 'send_group_msg' | 'send_private_msg' | 'send_msg';
-	misc: 'get_status' | 'get_version_info';
-	engagement: 'send_group_sign';
+	other: 'get_status' | 'get_version_info';
+	relationship: 'delete_friend';
 };
 
 /**
@@ -57,10 +57,10 @@ export type FriendProperties = PropertiesOf<FriendAction>;
 export type GroupAction = Entity<OneBotMap, 'group'>;
 export type GroupProperties = PropertiesOf<GroupAction>;
 
-export type MiscAction = Entity<OneBotMap, 'misc'>;
+export type MiscAction = Entity<OneBotMap, 'other'>;
 export type MiscProperties = PropertiesOf<MiscAction>;
 
-export type EngagementAction = Entity<OneBotMap, 'engagement'>;
+export type EngagementAction = Entity<OneBotMap, 'group'>;
 export type EngagementProperties = PropertiesOf<EngagementAction>;
 /**
  * 登录信息接口（get_login_info）的返回数据结构

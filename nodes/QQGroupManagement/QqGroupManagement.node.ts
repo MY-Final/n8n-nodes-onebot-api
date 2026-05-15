@@ -6,9 +6,9 @@ import {
 	NodeOperationError,
 	INodeExecutionData,
 } from 'n8n-workflow';
-import { MuteUser, MuteAll } from '../OneBot/action/group-managements/Mute';
-import { KickUser } from '../OneBot/action/group-managements/Kick';
-import { SetAdmin } from '../OneBot/action/group-managements/SetAdmin';
+import { apiRequest } from '../OneBot/GenericFunctions';
+import { API_PATHS } from '../OneBot/constants/apiPaths';
+import { checkBotGroupPermission } from '../utils/PermissionUtils';
 
 /**
  * QQ 群管理 Tool 节点
@@ -125,21 +125,95 @@ export class QqGroupManagement implements INodeType {
 		for (let index = 0; index < items.length; index++) {
 			try {
 				const action = this.getNodeParameter('action', index) as string;
-				let data: IDataObject;
+				const group_id = this.getNodeParameter('groupId', index) as string;
+				const data: IDataObject = {};
 
 				switch (action) {
-					case 'mute_user':
-						data = await MuteUser.call(this, index);
+					case 'mute_user': {
+						const user_id = this.getNodeParameter('userId', index) as string;
+						const duration = this.getNodeParameter('duration', index) as number;
+
+						const permission = await checkBotGroupPermission(this, group_id);
+						if (!permission.canOperate) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`机器人没有权限执行禁言操作。当前角色：${
+									permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
+								}，需要管理员或群主权限。`,
+								{ itemIndex: index },
+							);
+						}
+
+						const body: IDataObject = { group_id, user_id: Number(user_id), duration };
+						Object.assign(data, await apiRequest.call(this, 'POST', API_PATHS.setGroupBan, body));
 						break;
-					case 'mute_all':
-						data = await MuteAll.call(this, index);
+					}
+					case 'mute_all': {
+						const enable = this.getNodeParameter('enable', index) as boolean;
+
+						const permission = await checkBotGroupPermission(this, group_id);
+						if (!permission.canOperate) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`机器人没有权限执行全员禁言操作。当前角色：${
+									permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
+								}，需要管理员或群主权限。`,
+								{ itemIndex: index },
+							);
+						}
+
+						const body: IDataObject = { group_id, enable };
+						Object.assign(
+							data,
+							await apiRequest.call(this, 'POST', API_PATHS.setGroupWholeBan, body),
+						);
 						break;
-					case 'kick_user':
-						data = await KickUser.call(this, index);
+					}
+					case 'kick_user': {
+						const user_id = this.getNodeParameter('userId', index) as string;
+						const reject_add_request = this.getNodeParameter(
+							'reject_add_request',
+							index,
+							false,
+						) as boolean;
+
+						const permission = await checkBotGroupPermission(this, group_id);
+						if (!permission.canOperate) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`机器人没有权限执行踢人操作。当前角色：${
+									permission.isOwner ? '群主' : permission.isAdmin ? '管理员' : '普通成员'
+								}，需要管理员或群主权限。`,
+								{ itemIndex: index },
+							);
+						}
+
+						const body: IDataObject = {
+							group_id,
+							user_id: Number(user_id),
+							reject_add_request,
+						};
+						Object.assign(
+							data,
+							await apiRequest.call(this, 'POST', API_PATHS.setGroupKick, body),
+						);
 						break;
-					case 'set_admin':
-						data = await SetAdmin.call(this, index);
+					}
+					case 'set_admin': {
+						const user_id = this.getNodeParameter('userId', index) as string;
+						const enable = this.getNodeParameter('enable', index) as boolean;
+
+						const body: IDataObject = {
+							group_id,
+							user_id: Number(user_id),
+							enable,
+						};
+						Object.assign(
+							data,
+							await apiRequest.call(this, 'POST', API_PATHS.setGroupAdmin, body),
+						);
 						break;
+					}
 					default:
 						throw new NodeOperationError(this.getNode(), `Unknown action: ${action}`, {
 							itemIndex: index,

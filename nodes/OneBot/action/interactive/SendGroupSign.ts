@@ -19,7 +19,7 @@ export async function sendGroupSign(this: IExecuteFunctions, index: number): Pro
 	}
 
 	const body: IDataObject = {
-		group_id: String(group_id),
+		group_id: Number(group_id),
 	};
 
 	return await apiRequest.call(this, 'POST', API_PATHS.sendGroupSign, body);

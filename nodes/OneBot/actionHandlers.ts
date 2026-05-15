@@ -57,7 +57,7 @@ const messageForwardHandlers: Record<string, ForwardHandler> = {
 const friendOperationHandlers: Record<string, OperationHandler> = {
 	get_friend_list: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'POST', 'get_friend_list');
+		return apiRequest.call(this, 'POST', 'get_friend_list', {});
 	},
 	get_stranger_info: async function (this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
@@ -67,7 +67,6 @@ const friendOperationHandlers: Record<string, OperationHandler> = {
 	},
 	send_like: sendLike,
 	send_poke: SendPoke,
-	delete_friend: DeleteFriend,
 };
 
 const relationshipOperationHandlers: Record<string, OperationHandler> = {
@@ -83,7 +82,7 @@ const groupOperationHandlers: Record<string, OperationHandler> = {
 	},
 	get_group_list: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'POST', 'get_group_list');
+		return apiRequest.call(this, 'POST', 'get_group_list', {});
 	},
 	get_group_member_info: async function (this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
@@ -111,16 +110,16 @@ const genericOperationHandlers: Record<string, OperationHandler> = {
 	// Bot 相关操作
 	get_login_info: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'POST', 'get_login_info');
+		return apiRequest.call(this, 'POST', 'get_login_info', {});
 	},
 	// Misc 相关操作
 	get_status: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'POST', 'get_status');
+		return apiRequest.call(this, 'POST', 'get_status', {});
 	},
 	get_version_info: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'POST', 'get_version_info');
+		return apiRequest.call(this, 'POST', 'get_version_info', {});
 	},
 };
 

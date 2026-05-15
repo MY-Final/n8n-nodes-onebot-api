@@ -3,6 +3,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import { botProperties } from './properties/bot.properties';
@@ -131,26 +132,53 @@ export class OneBot implements INodeType {
 			const forwardMode = getForwardModeParam.call(this);
 
 			if (forwardMode) {
-				const operation = this.getNodeParameter('operation', 0) as string;
-				const data = await executeForwardMode.call(this, items, operation);
-				const json = this.helpers.returnJsonArray(data);
-				return [json];
+				try {
+					const operation = this.getNodeParameter('operation', 0) as string;
+					const data = await executeForwardMode.call(this, items, operation);
+					const json = this.helpers.returnJsonArray(data);
+					const executionData = this.helpers.constructExecutionMetaData(json, {
+						itemData: { item: 0 },
+					});
+					return [executionData];
+				} catch (error) {
+					if (this.continueOnFail()) {
+						const errorData = this.helpers.returnJsonArray({
+							error: error instanceof Error ? error.message : String(error),
+						});
+						return [errorData];
+					}
+					throw new NodeOperationError(this.getNode(), error);
+				}
 			}
 		}
 
 		// Execute operations for each item
 		const result: INodeExecutionData[] = [];
 		for (let index = 0; index < items.length; index++) {
-			const operation = this.getNodeParameter('operation', index);
+			try {
+				const operation = this.getNodeParameter('operation', index);
 
-			const data = await executeOperation.call(this, resource, operation, index);
+				const data = await executeOperation.call(this, resource, operation, index);
 
-			const json = this.helpers.returnJsonArray(data);
-			const executionData = this.helpers.constructExecutionMetaData(json, {
-				itemData: { item: index },
-			});
+				const json = this.helpers.returnJsonArray(data);
+				const executionData = this.helpers.constructExecutionMetaData(json, {
+					itemData: { item: index },
+				});
 
-			result.push(...executionData);
+				result.push(...executionData);
+			} catch (error) {
+				if (this.continueOnFail()) {
+					const errorData = this.helpers.returnJsonArray({
+						error: error instanceof Error ? error.message : String(error),
+					});
+					const executionData = this.helpers.constructExecutionMetaData(errorData, {
+						itemData: { item: index },
+					});
+					result.push(...executionData);
+					continue;
+				}
+				throw new NodeOperationError(this.getNode(), error, { itemIndex: index });
+			}
 		}
 
 		return [result];

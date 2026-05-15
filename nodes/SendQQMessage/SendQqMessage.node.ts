@@ -6,7 +6,8 @@ import {
 	NodeOperationError,
 	INodeExecutionData,
 } from 'n8n-workflow';
-import { sendPrivateMsg, sendGroupMsg } from '../OneBot/action/message/SendMessage';
+import { apiRequest } from '../OneBot/GenericFunctions';
+import { API_PATHS } from '../OneBot/constants/apiPaths';
 
 /**
  * 发送 QQ 消息 Tool 节点
@@ -107,17 +108,30 @@ export class SendQqMessage implements INodeType {
 
 		for (let index = 0; index < items.length; index++) {
 			try {
-				const messageType = this.getNodeParameter('messageType', index) as 'private' | 'group';
+				const messageType = this.getNodeParameter('messageType', index) as
+					| 'private'
+					| 'group';
+				const message = this.getNodeParameter('message', index) as string;
+				const autoEscape = this.getNodeParameter('autoEscape', index, false) as boolean;
 
-				let data: IDataObject;
+				const body: IDataObject = { message };
+				let endpoint: string;
 
 				if (messageType === 'private') {
-					// 调用内部的 sendPrivateMsg 函数
-					data = await sendPrivateMsg.call(this, index);
+					const user_id = this.getNodeParameter('userId', index) as string;
+					body.user_id = Number(user_id);
+					endpoint = API_PATHS.sendPrivateMsg;
 				} else {
-					// 调用内部的 sendGroupMsg 函数
-					data = await sendGroupMsg.call(this, index);
+					const group_id = this.getNodeParameter('groupId', index) as string;
+					body.group_id = Number(group_id);
+					endpoint = API_PATHS.sendGroupMsg;
 				}
+
+				if (autoEscape) {
+					body.auto_escape = true;
+				}
+
+				const data = await apiRequest.call(this, 'POST', endpoint, body);
 
 				const json = this.helpers.returnJsonArray(data);
 				result.push(...json);

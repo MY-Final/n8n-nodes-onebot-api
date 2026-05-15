@@ -49,12 +49,6 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	}
 
 	// 执行禁言
-	if (userIds.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行禁言。', {
-			itemIndex: index,
-		});
-	}
-
 	const results: MuteResult[] = [];
 
 	for (const uid of userIds) {

@@ -46,7 +46,7 @@ export async function getManagedGroupList(
 ): Promise<INodePropertyOptions[]> {
 	try {
 		// 获取机器人登录信息
-		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as LoginInfoResponse;
+		const loginInfo = (await apiRequest.call(this, 'POST', 'get_login_info')) as LoginInfoResponse;
 
 		if (!loginInfo?.data?.user_id) {
 			return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
@@ -55,7 +55,7 @@ export async function getManagedGroupList(
 		const botId = loginInfo.data.user_id;
 
 		// 获取群列表
-		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as
+		const groupListResponse = (await apiRequest.call(this, 'POST', 'get_group_list')) as
 			| {
 					data?: GroupInfo[];
 			  }
@@ -91,7 +91,7 @@ export async function getManagedGroupList(
 				const query = { group_id: group.id, user_id: botId };
 				const memberInfo = (await apiRequest.call(
 					this,
-					'GET',
+					'POST',
 					'get_group_member_info',
 					undefined,
 					query,
@@ -130,7 +130,7 @@ export async function getOwnedGroupList(
 ): Promise<INodePropertyOptions[]> {
 	try {
 		// 获取机器人登录信息
-		const loginInfo = (await apiRequest.call(this, 'GET', 'get_login_info')) as LoginInfoResponse;
+		const loginInfo = (await apiRequest.call(this, 'POST', 'get_login_info')) as LoginInfoResponse;
 
 		if (!loginInfo?.data?.user_id) {
 			return [{ name: '获取失败', value: '', description: '无法获取登录信息' }];
@@ -139,7 +139,7 @@ export async function getOwnedGroupList(
 		const botId = loginInfo.data.user_id;
 
 		// 获取群列表
-		const groupListResponse = (await apiRequest.call(this, 'GET', 'get_group_list')) as
+		const groupListResponse = (await apiRequest.call(this, 'POST', 'get_group_list')) as
 			| {
 					data?: GroupInfo[];
 			  }
@@ -170,13 +170,13 @@ export async function getOwnedGroupList(
 				continue;
 			}
 
-			// 否则查询该群的成员信息
-			if (!group.role) {
+				// 否则查询该群的成员信息
+				if (!group.role) {
 				try {
 					const query = { group_id: group.id, user_id: botId };
 					const memberInfo = (await apiRequest.call(
 						this,
-						'GET',
+						'POST',
 						'get_group_member_info',
 						undefined,
 						query,

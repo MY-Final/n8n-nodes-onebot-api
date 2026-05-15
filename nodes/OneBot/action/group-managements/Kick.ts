@@ -56,12 +56,6 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	}
 
 	// 执行踢人
-	if (userIds.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行踢出。', {
-			itemIndex: index,
-		});
-	}
-
 	const results: KickResult[] = [];
 
 	for (const uid of userIds) {
