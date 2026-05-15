@@ -36,7 +36,7 @@ export const friendProperties: INodeProperties[] = [
 		},
 	},
 
-	// user_id
+	// 用户选择字段（多选）- 用于批量操作
 	{
 		displayName: 'User Names or IDs',
 		name: 'user_ids',
@@ -54,6 +54,7 @@ export const friendProperties: INodeProperties[] = [
 			},
 		},
 	},
+	// 用户选择字段（单选）- 用于单个用户操作
 	{
 		displayName: 'User Name or ID',
 		name: 'user_id',
@@ -66,7 +67,7 @@ export const friendProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['send_private_msg', 'get_stranger_info'],
+				operation: ['get_stranger_info'],
 				resource: ['friend'],
 			},
 		},

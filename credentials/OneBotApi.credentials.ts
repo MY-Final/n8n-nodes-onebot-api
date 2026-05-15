@@ -42,8 +42,8 @@ export class OneBotApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: '={{ $credentials.server }}',
-			url: '/get_status',
-			method: 'GET',
+			url: '/get_login_info',
+			method: 'POST',
 		},
 	};
 }

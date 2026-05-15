@@ -1,9 +1,50 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IDataObject, IExecuteFunctions } from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 interface UploadGroupFileResponse {
 	file_id?: string | null;
+}
+
+/**
+ * 验证文件路径或 URL 是否有效
+ */
+function validateFilePath(file: string): { valid: boolean; error?: string } {
+	if (!file || file.trim().length === 0) {
+		return { valid: false, error: '文件路径或 URL 不能为空' };
+	}
+
+	const trimmedFile = file.trim();
+
+	// 检查是否为 HTTP/HTTPS URL
+	if (trimmedFile.startsWith('http://') || trimmedFile.startsWith('https://')) {
+		try {
+			new URL(trimmedFile);
+			return { valid: true };
+		} catch {
+			return { valid: false, error: '无效的 HTTP/HTTPS URL 格式' };
+		}
+	}
+
+	// 检查是否为 file:// 协议
+	if (trimmedFile.startsWith('file://')) {
+		return { valid: true };
+	}
+
+	// 检查是否为本地路径（Windows 或 Unix）
+	// Windows: C:\path\to\file 或 \\network\path
+	// Unix: /path/to/file 或 ~/path/to/file
+	const isWindowsPath = /^[a-zA-Z]:\\/.test(trimmedFile) || trimmedFile.startsWith('\\\\');
+	const isUnixPath = trimmedFile.startsWith('/') || trimmedFile.startsWith('~');
+
+	if (isWindowsPath || isUnixPath) {
+		return { valid: true };
+	}
+
+	return {
+		valid: false,
+		error: '无效的文件路径格式。支持：本地路径、file:// 协议或 HTTP/HTTPS URL',
+	};
 }
 
 /**
@@ -28,11 +69,26 @@ export async function uploadGroupFile(
 	const file = this.getNodeParameter('file', index) as string;
 	const name = this.getNodeParameter('name', index) as string;
 
+	// 验证文件路径
+	const validation = validateFilePath(file);
+	if (!validation.valid) {
+		throw new NodeOperationError(this.getNode(), validation.error || '文件路径验证失败', {
+			itemIndex: index,
+		});
+	}
+
+	// 验证文件名
+	if (!name || name.trim().length === 0) {
+		throw new NodeOperationError(this.getNode(), '文件名不能为空', {
+			itemIndex: index,
+		});
+	}
+
 	// 构建请求体
 	const body: IDataObject = {
 		group_id,
-		file,
-		name,
+		file: file.trim(),
+		name: name.trim(),
 		upload_file: true,
 	};
 
@@ -65,9 +121,17 @@ export async function uploadGroupFile(
 	}
 	body.upload_file = upload_file;
 
-	return apiRequest.call(this, 'POST', API_PATHS.uploadGroupFile, body) as Promise<
-		IDataObject & {
+	try {
+		return (await apiRequest.call(this, 'POST', API_PATHS.uploadGroupFile, body)) as IDataObject & {
 			data?: UploadGroupFileResponse;
-		}
-	>;
+		};
+	} catch (error) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`上传群文件失败: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				itemIndex: index,
+			},
+		);
+	}
 }

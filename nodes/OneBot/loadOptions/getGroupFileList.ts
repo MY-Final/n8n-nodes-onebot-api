@@ -1,6 +1,6 @@
 import { ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow';
 import { apiRequest } from '../GenericFunctions';
-import { API_PATHS } from '../constants/apiPaths';
+import { API_PATHS, CONSTANTS } from '../constants/apiPaths';
 
 interface GroupFile {
 	file_id: string;
@@ -36,7 +36,7 @@ export async function getGroupRootFileList(
 
 		const response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupRootFiles, {
 			group_id,
-			file_count: 100,
+			file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 		})) as { data?: GetGroupFilesResponse };
 
 		const files = response.data?.files || [];
@@ -81,14 +81,14 @@ export async function getGroupFileListByDirectory(
 		if (current_parent_directory === '/') {
 			response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupRootFiles, {
 				group_id,
-				file_count: 100,
+				file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 			})) as { data?: GetGroupFilesResponse };
 		} else {
 			// 否则使用 get_group_files_by_folder
 			response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupFilesByFolder, {
 				group_id,
 				folder_id: current_parent_directory,
-				file_count: 100,
+				file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 			})) as { data?: GetGroupFilesResponse };
 		}
 
@@ -130,7 +130,7 @@ export async function getGroupFileByFolderList(
 		const response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupFilesByFolder, {
 			group_id,
 			folder_id,
-			file_count: 100,
+			file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 		})) as { data?: GetGroupFilesResponse };
 
 		const files = response.data?.files || [];
@@ -164,7 +164,7 @@ export async function getGroupRootFolderList(
 
 		const response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupRootFiles, {
 			group_id,
-			file_count: 100,
+			file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 		})) as { data?: GetGroupFilesResponse };
 
 		const folders = response.data?.folders || [];
@@ -206,7 +206,7 @@ export async function getAllGroupFolderList(
 
 		const response = (await apiRequest.call(this, 'POST', API_PATHS.getGroupRootFiles, {
 			group_id,
-			file_count: 100,
+			file_count: CONSTANTS.DEFAULT_FILE_COUNT,
 		})) as { data?: GetGroupFilesResponse };
 
 		const folders = response.data?.folders || [];
@@ -237,13 +237,15 @@ export async function getAllGroupFolderList(
  * 格式化文件大小
  */
 function formatFileSize(bytes: number): string {
-	if (bytes < 1024) {
+	const { KB, MB, GB } = CONSTANTS.FILE_SIZE_UNITS;
+
+	if (bytes < KB) {
 		return bytes + ' B';
-	} else if (bytes < 1024 * 1024) {
-		return (bytes / 1024).toFixed(2) + ' KB';
-	} else if (bytes < 1024 * 1024 * 1024) {
-		return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+	} else if (bytes < MB) {
+		return (bytes / KB).toFixed(2) + ' KB';
+	} else if (bytes < GB) {
+		return (bytes / MB).toFixed(2) + ' MB';
 	} else {
-		return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+		return (bytes / GB).toFixed(2) + ' GB';
 	}
 }

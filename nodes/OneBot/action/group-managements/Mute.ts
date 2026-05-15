@@ -13,47 +13,25 @@ interface MuteResult {
 /**
  * 禁言指定用户
  * 必填字段：
- * - group_id: number 群号
- * - user_id: number 用户QQ
+ * - managed_group_id: number 群号（管理员群组）
+ * - user_ids: number[] 用户QQ列表（多选）
  * - duration: number 禁言时长（秒）
  *
  * 权限要求：机器人必须是管理员或群主
  */
 export async function MuteUser(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	let group_id: number;
-	try {
-		group_id = this.getNodeParameter('managed_group_id', index) as number;
-	} catch {
-		try {
-			group_id = this.getNodeParameter('group_id', index) as number;
-		} catch {
-			group_id = Number(this.getNodeParameter('groupId', index));
-		}
-	}
+	const group_id = this.getNodeParameter('managed_group_id', index) as number;
 
-	// 支持多选成员
-	const userIdsParam = this.getNodeParameter('user_ids', index, []) as
-		| string[]
-		| number[]
-		| undefined;
+	// 获取用户列表（多选）
+	const userIdsParam = this.getNodeParameter('user_ids', index, []) as string[] | number[];
 	const userIds = Array.isArray(userIdsParam)
 		? userIdsParam.map((v) => Number(v)).filter((v) => !isNaN(v))
 		: [];
 
-	// 单选回退
-	let singleUserId: number | null = null;
 	if (userIds.length === 0) {
-		try {
-			singleUserId = Number(this.getNodeParameter('user_id', index));
-			if (isNaN(singleUserId)) singleUserId = null;
-		} catch {
-			try {
-				singleUserId = Number(this.getNodeParameter('userId', index));
-				if (isNaN(singleUserId)) singleUserId = null;
-			} catch {
-				singleUserId = null;
-			}
-		}
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行禁言。', {
+			itemIndex: index,
+		});
 	}
 
 	const duration = this.getNodeParameter('duration', index) as number;
@@ -70,17 +48,16 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 		);
 	}
 
-	// 执行禁言（多选优先，单选回退）
-	const targets = userIds.length > 0 ? userIds : singleUserId !== null ? [singleUserId] : [];
-	if (targets.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行禁言（支持多选或单选）。', {
+	// 执行禁言
+	if (userIds.length === 0) {
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行禁言。', {
 			itemIndex: index,
 		});
 	}
 
 	const results: MuteResult[] = [];
 
-	for (const uid of targets) {
+	for (const uid of userIds) {
 		const body: IDataObject = { group_id, user_id: uid, duration };
 		try {
 			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupBan, body);
@@ -97,7 +74,7 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 	return {
 		group_id,
 		duration,
-		total: targets.length,
+		total: userIds.length,
 		success: results.filter((r) => r.ok).length,
 		failed: results.filter((r) => !r.ok).length,
 		results,
@@ -107,22 +84,13 @@ export async function MuteUser(this: IExecuteFunctions, index: number): Promise<
 /**
  * 全员禁言开关
  * 必填字段：
- * - group_id: number 群号
+ * - managed_group_id: number 群号（管理员群组）
  * - enable: boolean 是否开启全员禁言
  *
  * 权限要求：机器人必须是管理员或群主
  */
 export async function MuteAll(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	let group_id: number;
-	try {
-		group_id = this.getNodeParameter('managed_group_id', index) as number;
-	} catch {
-		try {
-			group_id = this.getNodeParameter('group_id', index) as number;
-		} catch {
-			group_id = Number(this.getNodeParameter('groupId', index));
-		}
-	}
+	const group_id = this.getNodeParameter('managed_group_id', index) as number;
 	const enable = this.getNodeParameter('enable', index) as boolean;
 
 	// 检查机器人权限：只有管理员或群主才能设置全员禁言

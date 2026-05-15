@@ -128,7 +128,7 @@ export const groupProperties: INodeProperties[] = [
 			},
 		},
 	},
-	// 退群需要所有群组
+	// 退群需要所有群组（多选）
 	{
 		displayName: 'Group Names or IDs',
 		name: 'group_ids',
@@ -146,6 +146,7 @@ export const groupProperties: INodeProperties[] = [
 			},
 		},
 	},
+	// 其他操作的群组选择（单选）
 	{
 		displayName: 'Group Name or ID',
 		name: 'group_id',
@@ -159,18 +160,16 @@ export const groupProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				operation: [
-					'group_leave',
 					'send_group_sign',
 					'get_group_info',
 					'get_group_member_info',
 					'get_group_member_list',
-					'send_poke',
 				],
 				resource: ['group'],
 			},
 		},
 	},
-	// Fields for specific actions
+	// 用户选择字段（多选）- 用于需要批量操作的场景
 	{
 		displayName: 'User Names or IDs',
 		name: 'user_ids',
@@ -179,16 +178,17 @@ export const groupProperties: INodeProperties[] = [
 			'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
-			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
+			loadOptionsDependsOn: ['managed_group_id'],
 		},
 		default: [],
 		displayOptions: {
 			show: {
 				resource: ['group'],
-				operation: ['mute_user', 'kick_user', 'set_group_admin', 'send_poke'],
+				operation: ['mute_user', 'kick_user', 'set_group_admin'],
 			},
 		},
 	},
+	// 用户选择字段（单选）- 用于单个用户操作
 	{
 		displayName: 'User Name or ID',
 		name: 'user_id',
@@ -197,13 +197,13 @@ export const groupProperties: INodeProperties[] = [
 			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code-examples/expressions/">expression</a>. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		typeOptions: {
 			loadOptionsMethod: 'getGroupMemberList',
-			loadOptionsDependsOn: ['group_id', 'managed_group_id'],
+			loadOptionsDependsOn: ['group_id'],
 		},
 		default: '',
 		displayOptions: {
 			show: {
 				resource: ['group'],
-				operation: ['mute_user', 'kick_user', 'set_group_admin', 'get_group_member_info'],
+				operation: ['get_group_member_info', 'send_poke'],
 			},
 		},
 	},

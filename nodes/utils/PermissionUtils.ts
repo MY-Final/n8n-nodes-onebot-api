@@ -36,13 +36,12 @@ export async function checkBotGroupPermission(
 		const botId = loginInfo.data.user_id;
 
 		// 2. 获取机器人在群中的信息
-		const query = { group_id: groupId, user_id: botId };
+		const body = { group_id: groupId, user_id: botId };
 		const memberInfo = await apiRequest.call(
 			executeFunctions,
-			'GET',
+			'POST',
 			'get_group_member_info',
-			undefined,
-			query,
+			body,
 		);
 
 		if (!memberInfo?.data) {

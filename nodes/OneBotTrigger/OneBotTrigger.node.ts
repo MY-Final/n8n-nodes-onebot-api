@@ -121,7 +121,7 @@ export class OneBotTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'OneBot Trigger',
 		name: 'oneBotTrigger',
-		icon: 'file:../OneBot/onebot.svg',
+		icon: 'file:onebot.svg',
 		group: ['trigger'],
 		version: 1,
 		description: 'Receive OneBot HTTP event callbacks',

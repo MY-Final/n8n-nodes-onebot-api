@@ -1,9 +1,4 @@
-import {
-	IDataObject,
-	IExecuteFunctions,
-	IHttpRequestMethods,
-	NodeOperationError,
-} from 'n8n-workflow';
+import { IDataObject, IExecuteFunctions, NodeOperationError } from 'n8n-workflow';
 import {
 	sendMsg,
 	sendPrivateMsg,
@@ -62,7 +57,7 @@ const messageForwardHandlers: Record<string, ForwardHandler> = {
 const friendOperationHandlers: Record<string, OperationHandler> = {
 	get_friend_list: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'GET', 'get_friend_list');
+		return apiRequest.call(this, 'POST', 'get_friend_list');
 	},
 	get_stranger_info: async function (this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
@@ -88,7 +83,7 @@ const groupOperationHandlers: Record<string, OperationHandler> = {
 	},
 	get_group_list: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'GET', 'get_group_list');
+		return apiRequest.call(this, 'POST', 'get_group_list');
 	},
 	get_group_member_info: async function (this: IExecuteFunctions, index: number) {
 		const body: IDataObject = {
@@ -116,16 +111,16 @@ const genericOperationHandlers: Record<string, OperationHandler> = {
 	// Bot 相关操作
 	get_login_info: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'GET', 'get_login_info');
+		return apiRequest.call(this, 'POST', 'get_login_info');
 	},
 	// Misc 相关操作
 	get_status: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'GET', 'get_status');
+		return apiRequest.call(this, 'POST', 'get_status');
 	},
 	get_version_info: async function (this: IExecuteFunctions, index: number) {
 		void index;
-		return apiRequest.call(this, 'GET', 'get_version_info');
+		return apiRequest.call(this, 'POST', 'get_version_info');
 	},
 };
 
@@ -206,6 +201,6 @@ export async function executeGenericOperation(
 			break;
 	}
 
-	const method: IHttpRequestMethods = Object.keys(body).length === 0 ? 'GET' : 'POST';
-	return apiRequest.call(this, method, operation, body);
+	// OneBot 协议统一使用 POST 方法
+	return apiRequest.call(this, 'POST', operation, body);
 }

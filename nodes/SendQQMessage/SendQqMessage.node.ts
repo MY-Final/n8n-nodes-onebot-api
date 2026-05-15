@@ -16,7 +16,7 @@ export class SendQqMessage implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Send QQ Message',
 		name: 'sendQqMessage',
-		icon: 'file:../OneBot/onebot.svg',
+		icon: 'file:onebot.svg',
 		iconColor: 'black',
 		group: ['transform'],
 		version: 1,

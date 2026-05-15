@@ -4,45 +4,60 @@ import { API_PATHS } from '../../constants/apiPaths';
 
 // 发送好友赞
 export async function sendLike(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const rawUserIds = this.getNodeParameter('user_ids', index, []) as Array<string | number>;
-	const userIdsFromMulti = Array.isArray(rawUserIds)
-		? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
-		: [];
+	try {
+		const rawUserIds = this.getNodeParameter('user_ids', index, []) as Array<string | number>;
+		const userIdsFromMulti = Array.isArray(rawUserIds)
+			? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
+			: [];
 
-	const legacyUserId = this.getNodeParameter('userId', index, '') as string | number;
-	const user_id = Number(this.getNodeParameter('user_id', index, legacyUserId) as string | number);
+		const legacyUserId = this.getNodeParameter('userId', index, '') as string | number;
+		const user_id = Number(
+			this.getNodeParameter('user_id', index, legacyUserId) as string | number,
+		);
 
-	const targets =
-		userIdsFromMulti.length > 0 ? userIdsFromMulti : [user_id].filter(Number.isFinite);
-	if (targets.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个好友（支持单选或多选）。', {
-			itemIndex: index,
-		});
-	}
-	const times = this.getNodeParameter('times', index) as number;
-
-	const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
-
-	for (const targetUserId of targets) {
-		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.sendLike, {
-				user_id: targetUserId,
-				times,
-			});
-			results.push({ user_id: targetUserId, ok: true, data });
-		} catch (error) {
-			results.push({
-				user_id: targetUserId,
-				ok: false,
-				error: error instanceof Error ? error.message : String(error),
+		const targets =
+			userIdsFromMulti.length > 0 ? userIdsFromMulti : [user_id].filter(Number.isFinite);
+		if (targets.length === 0) {
+			throw new NodeOperationError(this.getNode(), '请至少选择一个好友（支持单选或多选）。', {
+				itemIndex: index,
 			});
 		}
-	}
+		const times = this.getNodeParameter('times', index) as number;
 
-	return {
-		total: targets.length,
-		success: results.filter((r) => r.ok).length,
-		failed: results.filter((r) => !r.ok).length,
-		results,
-	};
+		const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
+
+		for (const targetUserId of targets) {
+			try {
+				const data = await apiRequest.call(this, 'POST', API_PATHS.sendLike, {
+					user_id: targetUserId,
+					times,
+				});
+				results.push({ user_id: targetUserId, ok: true, data });
+			} catch (error) {
+				results.push({
+					user_id: targetUserId,
+					ok: false,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+
+		return {
+			total: targets.length,
+			success: results.filter((r) => r.ok).length,
+			failed: results.filter((r) => !r.ok).length,
+			results,
+		};
+	} catch (error) {
+		if (error instanceof NodeOperationError) {
+			throw error;
+		}
+		throw new NodeOperationError(
+			this.getNode(),
+			`发送点赞失败: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				itemIndex: index,
+			},
+		);
+	}
 }

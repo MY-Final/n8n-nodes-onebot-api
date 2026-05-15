@@ -95,23 +95,23 @@ export class OneBotAiTools implements INodeType {
 
 				switch (tool) {
 					case 'get_login_info':
-						data = await apiRequest.call(this, 'GET', API_PATHS.getLoginInfo);
+						data = await apiRequest.call(this, 'POST', API_PATHS.getLoginInfo);
 						break;
 
 					case 'get_friend_list':
-						data = await apiRequest.call(this, 'GET', API_PATHS.getFriendList);
+						data = await apiRequest.call(this, 'POST', API_PATHS.getFriendList);
 						break;
 
 					case 'get_group_list':
-						data = await apiRequest.call(this, 'GET', API_PATHS.getGroupList);
+						data = await apiRequest.call(this, 'POST', API_PATHS.getGroupList);
 						break;
 
 					case 'get_status':
-						data = await apiRequest.call(this, 'GET', 'get_status');
+						data = await apiRequest.call(this, 'POST', 'get_status');
 						break;
 
 					case 'get_version_info':
-						data = await apiRequest.call(this, 'GET', 'get_version_info');
+						data = await apiRequest.call(this, 'POST', 'get_version_info');
 						break;
 
 					default:

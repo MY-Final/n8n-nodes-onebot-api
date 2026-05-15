@@ -86,3 +86,19 @@ export const API_PATHS = {
 	// 重命名群文件
 	renameGroupFile: 'rename_group_file',
 };
+
+/**
+ * 常量配置
+ */
+export const CONSTANTS = {
+	// 默认文件数量
+	DEFAULT_FILE_COUNT: 100,
+
+	// 文件大小单位
+	FILE_SIZE_UNITS: {
+		BYTE: 1,
+		KB: 1024,
+		MB: 1024 * 1024,
+		GB: 1024 * 1024 * 1024,
+	},
+};

@@ -1,5 +1,5 @@
 import { apiRequest } from '../../GenericFunctions';
-import { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow';
 import { API_PATHS } from '../../constants/apiPaths';
 
 /**
@@ -11,49 +11,73 @@ import { API_PATHS } from '../../constants/apiPaths';
  * - temp_both_del: boolean 是否双向删除（从对方列表里也把自己删掉）
  */
 export async function DeleteFriend(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const temp_block = this.getNodeParameter('temp_block', index) as boolean;
-	const temp_both_del = this.getNodeParameter('temp_both_del', index) as boolean;
+	try {
+		const temp_block = this.getNodeParameter('temp_block', index) as boolean;
+		const temp_both_del = this.getNodeParameter('temp_both_del', index) as boolean;
 
-	const rawUserIds = (this.getNodeParameter('user_ids', index, []) as Array<string | number>) || [];
-	const userIds: number[] =
-		Array.isArray(rawUserIds) && rawUserIds.length > 0
-			? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
-			: [this.getNodeParameter('user_id', index) as number];
+		const rawUserIds =
+			(this.getNodeParameter('user_ids', index, []) as Array<string | number>) || [];
+		const userIds: number[] =
+			Array.isArray(rawUserIds) && rawUserIds.length > 0
+				? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
+				: [this.getNodeParameter('user_id', index) as number];
 
-	const details: Array<{
-		user_id: number;
-		success: boolean;
-		error?: string;
-		response?: IDataObject;
-	}> = [];
-	let successCount = 0;
-	let failedCount = 0;
-
-	for (const uid of userIds) {
-		const body: IDataObject = {
-			user_id: uid,
-			temp_block,
-			temp_both_del,
-		};
-
-		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.deleteFriend, body);
-			details.push({ user_id: uid, success: true, response: data as IDataObject });
-			successCount++;
-		} catch (error: unknown) {
-			details.push({
-				user_id: uid,
-				success: false,
-				error: error instanceof Error ? error.message : String(error),
-			});
-			failedCount++;
+		if (userIds.length === 0) {
+			throw new NodeOperationError(
+				this.getNode(),
+				'请至少选择一个好友进行删除（支持单选或多选）。',
+				{
+					itemIndex: index,
+				},
+			);
 		}
-	}
 
-	return {
-		total: userIds.length,
-		success: successCount,
-		failed: failedCount,
-		details,
-	};
+		const details: Array<{
+			user_id: number;
+			success: boolean;
+			error?: string;
+			response?: IDataObject;
+		}> = [];
+		let successCount = 0;
+		let failedCount = 0;
+
+		for (const uid of userIds) {
+			const body: IDataObject = {
+				user_id: uid,
+				temp_block,
+				temp_both_del,
+			};
+
+			try {
+				const data = await apiRequest.call(this, 'POST', API_PATHS.deleteFriend, body);
+				details.push({ user_id: uid, success: true, response: data as IDataObject });
+				successCount++;
+			} catch (error: unknown) {
+				details.push({
+					user_id: uid,
+					success: false,
+					error: error instanceof Error ? error.message : String(error),
+				});
+				failedCount++;
+			}
+		}
+
+		return {
+			total: userIds.length,
+			success: successCount,
+			failed: failedCount,
+			details,
+		};
+	} catch (error) {
+		if (error instanceof NodeOperationError) {
+			throw error;
+		}
+		throw new NodeOperationError(
+			this.getNode(),
+			`删除好友失败: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				itemIndex: index,
+			},
+		);
+	}
 }

@@ -5,61 +5,74 @@ import { API_PATHS } from '../../constants/apiPaths';
 /**
  * 发送戳一戳
  * 支持好友戳一戳和群组戳一戳
- * - 好友戳一戳：只需要 user_id，不需要 group_id
- * - 群组戳一戳：需要 user_id 和 group_id
+ * - 好友戳一戳（Friend resource）：使用 user_ids（多选）
+ * - 群组戳一戳（Group resource）：使用 group_id + user_id（单选）
  */
 export async function SendPoke(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	const rawUserIds = this.getNodeParameter('user_ids', index, []) as Array<string | number>;
-	const userIdsFromMulti = Array.isArray(rawUserIds)
-		? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
-		: [];
+	const resource = this.getNodeParameter('resource', index) as string;
 
-	const legacyUserId = this.getNodeParameter('userId', index, '') as string | number;
-	const user_id = Number(this.getNodeParameter('user_id', index, legacyUserId) as string | number);
+	// Friend resource: 批量戳一戳
+	if (resource === 'friend') {
+		const rawUserIds = this.getNodeParameter('user_ids', index, []) as Array<string | number>;
+		const userIds = Array.isArray(rawUserIds)
+			? rawUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
+			: [];
 
-	const targets =
-		userIdsFromMulti.length > 0 ? userIdsFromMulti : [user_id].filter(Number.isFinite);
-	if (targets.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个目标用户（支持单选或多选）。', {
-			itemIndex: index,
-		});
-	}
-
-	// group_id 是可选的，只有在群组戳一戳时才需要
-	let group_id: number | string;
-	try {
-		group_id = this.getNodeParameter('group_id', index, '') as number | string;
-	} catch {
-		group_id = this.getNodeParameter('groupId', index, '') as number | string;
-	}
-
-	const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
-
-	for (const targetUserId of targets) {
-		const body: IDataObject = {
-			user_id: targetUserId,
-		};
-
-		if (group_id !== undefined && group_id !== null && group_id !== '') {
-			body.group_id = group_id;
-		}
-
-		try {
-			const data = await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
-			results.push({ user_id: targetUserId, ok: true, data });
-		} catch (error) {
-			results.push({
-				user_id: targetUserId,
-				ok: false,
-				error: error instanceof Error ? error.message : String(error),
+		if (userIds.length === 0) {
+			throw new NodeOperationError(this.getNode(), '请至少选择一个好友进行戳一戳。', {
+				itemIndex: index,
 			});
 		}
+
+		const results: Array<{ user_id: number; ok: boolean; data?: IDataObject; error?: string }> = [];
+
+		for (const targetUserId of userIds) {
+			const body: IDataObject = { user_id: targetUserId };
+
+			try {
+				const data = await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
+				results.push({ user_id: targetUserId, ok: true, data });
+			} catch (error) {
+				results.push({
+					user_id: targetUserId,
+					ok: false,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
+
+		return {
+			total: userIds.length,
+			success: results.filter((r) => r.ok).length,
+			failed: results.filter((r) => !r.ok).length,
+			results,
+		};
 	}
 
-	return {
-		total: targets.length,
-		success: results.filter((r) => r.ok).length,
-		failed: results.filter((r) => !r.ok).length,
-		results,
+	// Group resource: 单个戳一戳
+	const group_id = this.getNodeParameter('group_id', index) as number;
+	const user_id = this.getNodeParameter('user_id', index) as number;
+
+	const body: IDataObject = {
+		group_id,
+		user_id,
 	};
+
+	try {
+		const data = await apiRequest.call(this, 'POST', API_PATHS.sendPoke, body);
+		return {
+			success: true,
+			group_id,
+			user_id,
+			data,
+		};
+	} catch (error) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`发送戳一戳失败: ${error instanceof Error ? error.message : String(error)}`,
+			{
+				itemIndex: index,
+			},
+		);
+	}
 }

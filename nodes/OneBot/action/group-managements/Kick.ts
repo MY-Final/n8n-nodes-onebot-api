@@ -20,47 +20,25 @@ interface LeaveGroupResult {
 /**
  * 将指定用户踢出群聊
  * 必填字段：
- * - group_id: number 群号
- * - user_id: number 用户QQ
+ * - managed_group_id: number 群号（管理员群组）
+ * - user_ids: number[] 用户QQ列表（多选）
  * - reject_add_request: boolean 是否拒绝再次加群（拉黑）
  *
  * 权限要求：机器人必须是管理员或群主
  */
 export async function KickUser(this: IExecuteFunctions, index: number): Promise<IDataObject> {
-	let group_id: number;
-	try {
-		group_id = this.getNodeParameter('managed_group_id', index) as number;
-	} catch {
-		try {
-			group_id = this.getNodeParameter('group_id', index) as number;
-		} catch {
-			group_id = Number(this.getNodeParameter('groupId', index));
-		}
-	}
+	const group_id = this.getNodeParameter('managed_group_id', index) as number;
 
-	// 支持多选成员
-	const userIdsParam = this.getNodeParameter('user_ids', index, []) as
-		| string[]
-		| number[]
-		| undefined;
+	// 获取用户列表（多选）
+	const userIdsParam = this.getNodeParameter('user_ids', index, []) as string[] | number[];
 	const userIds = Array.isArray(userIdsParam)
 		? userIdsParam.map((v) => Number(v)).filter((v) => !isNaN(v))
 		: [];
 
-	// 单选回退
-	let singleUserId: number | null = null;
 	if (userIds.length === 0) {
-		try {
-			singleUserId = Number(this.getNodeParameter('user_id', index));
-			if (isNaN(singleUserId)) singleUserId = null;
-		} catch {
-			try {
-				singleUserId = Number(this.getNodeParameter('userId', index));
-				if (isNaN(singleUserId)) singleUserId = null;
-			} catch {
-				singleUserId = null;
-			}
-		}
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行踢出。', {
+			itemIndex: index,
+		});
 	}
 
 	const reject_add_request = this.getNodeParameter('reject_add_request', index, false) as boolean;
@@ -77,17 +55,16 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 		);
 	}
 
-	// 执行踢人（多选优先，单选回退）
-	const targets = userIds.length > 0 ? userIds : singleUserId !== null ? [singleUserId] : [];
-	if (targets.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行踢出（支持多选或单选）。', {
+	// 执行踢人
+	if (userIds.length === 0) {
+		throw new NodeOperationError(this.getNode(), '请至少选择一个成员进行踢出。', {
 			itemIndex: index,
 		});
 	}
 
 	const results: KickResult[] = [];
 
-	for (const uid of targets) {
+	for (const uid of userIds) {
 		const body: IDataObject = { group_id, user_id: uid, reject_add_request };
 		try {
 			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupKick, body);
@@ -104,7 +81,7 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 	return {
 		group_id,
 		reject_add_request,
-		total: targets.length,
+		total: userIds.length,
 		success: results.filter((r) => r.ok).length,
 		failed: results.filter((r) => !r.ok).length,
 		results,
@@ -114,38 +91,23 @@ export async function KickUser(this: IExecuteFunctions, index: number): Promise<
 /**
  * 机器人主动退出群聊
  * 必填字段：
- * - group_id: number 群号
+ * - group_ids: number[] 群号列表（多选）
  */
 export async function LeaveGroup(this: IExecuteFunctions, index: number): Promise<IDataObject> {
 	const rawGroupIds = this.getNodeParameter('group_ids', index, []) as Array<string | number>;
-	const groupIdsFromMulti = Array.isArray(rawGroupIds)
+	const groupIds = Array.isArray(rawGroupIds)
 		? rawGroupIds.map((v) => Number(v)).filter((v) => Number.isFinite(v))
 		: [];
 
-	const targets =
-		groupIdsFromMulti.length > 0
-			? groupIdsFromMulti
-			: [
-					Number(
-						(() => {
-							try {
-								return this.getNodeParameter('group_id', index);
-							} catch {
-								return this.getNodeParameter('groupId', index);
-							}
-						})(),
-					),
-				].filter((v) => Number.isFinite(v));
-
-	if (targets.length === 0) {
-		throw new NodeOperationError(this.getNode(), '请至少选择一个群组进行退出（支持多选或单选）。', {
+	if (groupIds.length === 0) {
+		throw new NodeOperationError(this.getNode(), '请至少选择一个群组进行退出。', {
 			itemIndex: index,
 		});
 	}
 
 	const results: LeaveGroupResult[] = [];
 
-	for (const group_id of targets) {
+	for (const group_id of groupIds) {
 		const body: IDataObject = { group_id };
 		try {
 			const data = await apiRequest.call(this, 'POST', API_PATHS.setGroupLeave, body);
@@ -160,7 +122,7 @@ export async function LeaveGroup(this: IExecuteFunctions, index: number): Promis
 	}
 
 	return {
-		total: targets.length,
+		total: groupIds.length,
 		success: results.filter((r) => r.ok).length,
 		failed: results.filter((r) => !r.ok).length,
 		results,

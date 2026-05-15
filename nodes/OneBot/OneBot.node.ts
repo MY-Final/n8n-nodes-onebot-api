@@ -67,10 +67,6 @@ export class OneBot implements INodeType {
 				default: 'message',
 				options: [
 					{
-						name: '预留项',
-						value: 'engagement',
-					},
-					{
 						name: 'Bot',
 						value: 'bot',
 					},

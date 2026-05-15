@@ -14,7 +14,7 @@ type OneBotCredentials = {
 /**
  * 通用的 OneBot API 请求函数
  * 封装了 n8n 的 HTTP 请求逻辑，自动处理凭证、URL 拼接、请求配置等
- * 
+ *
  * @this 绑定 n8n 的 IAllExecuteFunctions 上下文，提供凭证获取、HTTP 请求等能力
  * @param method HTTP 请求方法（GET/POST/PUT/DELETE 等），符合 n8n 定义的 IHttpRequestMethods 类型
  * @param endpoint API 端点路径（如 /send_message）
